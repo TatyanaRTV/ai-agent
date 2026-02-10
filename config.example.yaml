@@ -1,0 +1,70 @@
+# Основная конфигурация Elena AI Agent
+project:
+  name: "Елена ИИ Агент"
+  version: "1.0.0"
+  author: "Татьяна"
+  created_date: "2026-02-05"
+
+system:
+  home_path: "/mnt/ai_data/II_AGENT"
+  obsidian_path: "/mnt/ai_data/My_Obsidian"
+  log_level: "INFO"
+  
+ai_models:
+  llm:
+    model_name: "Qwen2.5-14B"
+    provider: "ollama"
+    temperature: 0.7
+    max_tokens: 4096
+    
+  embedding:
+    model_name: "paraphrase-multilingual-MiniLM-L12-v2"
+    provider: "sentence-transformers"
+    
+  vision:
+    model_name: "vikhyatk/moondream2"
+    
+  speech:
+    stt_model: "openai/whisper-base"
+    tts_voice: "RHVoice-Elena"
+    language: "ru"
+    gender: "female"
+
+memory:
+  vector_db:
+    type: "chromadb"
+    path: "./data/vectors"
+    collection_name: "elena_memory"
+    
+  retention_days: 30
+  max_memory_size: "10GB"
+
+interfaces:
+  telegram:
+    enabled: true
+    token: "YOUR_TELEGRAM_TOKEN"
+    
+  browser:
+    enabled: true
+    port: 8000
+    host: "localhost"
+    
+  voice:
+    enabled: true
+    input_device: "default"
+    output_device: "default"
+    
+  obsidian:
+    enabled: true
+    vault_path: "/mnt/ai_data/My_Obsidian"
+
+self_improvement:
+  enabled: true
+  learning_rate: 0.01
+  feedback_interval: 3600
+  cleanup_interval: 86400
+
+security:
+  encryption_enabled: true
+  auth_required: false
+  data_retention_days: 30

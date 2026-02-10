@@ -1,0 +1,164 @@
+# ============================================
+# ЗАВИСИМОСТИ ПРОЕКТА "ЕЛЕНА"
+# ============================================
+
+# ----- ЯДРО ПРОЕКТА -----
+python>=3.10.0
+
+# ----- ОСНОВНЫЕ БИБЛИОТЕКИ -----
+torch>=2.0.0
+transformers>=4.30.0
+langchain>=0.0.200
+chromadb>=0.4.0
+sentence-transformers>=2.2.0
+
+# ----- ОБРАБОТКА ТЕКСТА И ЯЗЫК -----
+nltk>=3.8.0
+spacy>=3.5.0
+https://github.com/explosion/spacy-models/releases/download/ru_core_news_sm-3.5.0/ru_core_news_sm-3.5.0-py3-none-any.whl
+pymorphy2>=0.9.1
+pymorphy2-dicts-ru>=2.4.417127.4579844
+razdel>=0.5.0
+natasha>=1.5.0
+
+# ----- ГОЛОСОВОЙ ИНТЕРФЕЙС -----
+# Синтез речи
+pyttsx3>=2.90
+rhvoice-wrapper>=0.1.0
+gTTS>=2.3.1
+
+# Распознавание речи
+SpeechRecognition>=3.10.0
+vosk>=0.3.45
+whisper>=1.1.10
+openai-whisper>=20231117
+
+# Аудио обработка
+pydub>=0.25.1
+pyaudio>=0.2.11
+wave>=0.0.2
+soundfile>=0.12.1
+librosa>=0.10.0
+
+# ----- КОМПЬЮТЕРНОЕ ЗРЕНИЕ -----
+opencv-python>=4.8.0
+Pillow>=10.0.0
+imageio>=2.31.0
+scikit-image>=0.21.0
+pytesseract>=0.3.10
+easyocr>=1.7.0
+
+# ----- ОБРАБОТКА ВИДЕО -----
+moviepy>=1.0.3
+imageio-ffmpeg>=0.4.8
+ffmpeg-python>=0.2.0
+
+# ----- РАБОТА С ДОКУМЕНТАМИ -----
+# PDF
+PyPDF2>=3.0.0
+pdf2image>=1.16.3
+pdfplumber>=0.10.2
+pikepdf>=8.0.0
+
+# Word
+python-docx>=0.8.11
+docx2txt>=0.8
+docx2pdf>=0.1.8
+
+# Excel
+openpyxl>=3.1.0
+pandas>=2.0.0
+xlrd>=2.0.1
+xlwt>=1.3.0
+
+# PowerPoint
+python-pptx>=0.6.21
+
+# Другие форматы
+markdown>=3.5.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+html5lib>=1.1
+
+# ----- ВЕКТОРНЫЕ БАЗЫ ДАННЫХ -----
+faiss-cpu>=1.7.0
+hnswlib>=0.7.0
+annoy>=1.17.3
+
+# ----- ИНТЕРФЕЙСЫ -----
+# Telegram
+python-telegram-bot>=20.0
+aiogram>=2.25.1
+
+# Веб-интерфейс
+fastapi>=0.100.0
+uvicorn>=0.23.0
+jinja2>=3.1.0
+aiofiles>=23.0.0
+websockets>=12.0
+
+# Obsidian
+obsidianmd>=0.1.0
+
+# Selenium для браузера
+selenium>=4.10.0
+webdriver-manager>=4.0.0
+
+# ----- СИСТЕМНЫЕ УТИЛИТЫ -----
+psutil>=5.9.0
+watchdog>=3.0.0
+pyautogui>=0.9.54
+keyboard>=0.13.5
+mss>=9.0.0
+
+# ----- КОНФИГУРАЦИЯ -----
+pyyaml>=6.0
+python-dotenv>=1.0.0
+toml>=0.10.0
+configparser>=5.3.0
+
+# ----- ЛОГИРОВАНИЕ -----
+loguru>=0.7.0
+colorama>=0.4.6
+structlog>=23.1.0
+
+# ----- БЕЗОПАСНОСТЬ -----
+cryptography>=41.0.0
+bcrypt>=4.0.0
+python-jose>=3.3.0
+passlib>=1.7.4
+
+# ----- СЕТЕВЫЕ УТИЛИТЫ -----
+requests>=2.31.0
+aiohttp>=3.8.0
+httpx>=0.24.0
+websocket-client>=1.6.0
+
+# ----- ДАТА И ВРЕМЯ -----
+python-dateutil>=2.8.0
+pytz>=2023.0
+arrow>=1.2.0
+
+# ----- СЕРИАЛИЗАЦИЯ -----
+msgpack>=1.0.0
+orjson>=3.9.0
+ujson>=5.8.0
+
+# ----- ТЕСТИРОВАНИЕ -----
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+pytest-mock>=3.11.0
+
+# ----- ДОПОЛНИТЕЛЬНО -----
+tqdm>=4.66.0
+rich>=13.0.0
+typer>=0.9.0
+click>=8.1.0
+
+# ----- РАЗРАБОТКА -----
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.0.0
+isort>=5.12.0
+pre-commit>=3.0.0

@@ -1,0 +1,14 @@
+learning:
+  self_improvement:
+    enabled: true
+    analysis_interval: 3600  # секунды
+    auto_improve: true
+  
+  training:
+    model_dir: "/mnt/ai_data/models"
+    checkpoint_dir: "/mnt/ai_data/checkpoints"
+    use_gpu: true
+  
+  feedback:
+    save_feedback: true
+    learn_from_feedback: true

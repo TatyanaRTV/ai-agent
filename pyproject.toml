@@ -1,0 +1,130 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-agent-elena"
+version = "1.0.0"
+description = "Универсальный самообучающийся ИИ-агент Елена"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Татьяна", email = "tatyana@example.com"}
+]
+keywords = ["ai", "assistant", "voice", "russian", "linux"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    "pyttsx3>=2.90",
+    "SpeechRecognition>=3.10.0",
+    "PyPDF2>=3.0.0",
+    "python-docx>=0.8.11",
+    "Pillow>=10.0.0",
+    "colorama>=0.4.6",
+    "pyyaml>=6.0",
+    "loguru>=0.7.0",
+]
+
+[project.optional-dependencies]
+full = [
+    "torch>=2.0.0",
+    "transformers>=4.30.0",
+    "chromadb>=0.4.0",
+    "fastapi>=0.100.0",
+    "python-telegram-bot>=20.0",
+    "opencv-python>=4.8.0",
+    "moviepy>=1.0.3",
+    "openpyxl>=3.1.0",
+    "python-pptx>=0.6.21",
+]
+
+dev = [
+    "pytest>=7.4.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+    "pytest-cov>=4.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/ваш-репозиторий/ai-agent"
+Documentation = "https://github.com/ваш-репозиторий/ai-agent/docs"
+Repository = "https://github.com/ваш-репозиторий/ai-agent"
+Issues = "https://github.com/ваш-репозиторий/ai-agent/issues"
+
+[project.scripts]
+elena = "src.main:main"
+elena-start = "scripts.run:main"
+elena-setup = "scripts.install:main"
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --strict-markers"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "slow: marks tests as slow",
+    "integration: marks tests as integration tests",
+]
+
+[coverage.run]
+source = ["src"]
+omit = [
+    "src/tests/*",
+    "src/*/tests/*",
+    "*/__pycache__/*",
+]
+
+[coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]

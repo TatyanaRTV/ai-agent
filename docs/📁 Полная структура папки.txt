@@ -1,0 +1,85 @@
+В папке /mnt/ai_data/ai-agent/docs должна находиться полная документация проекта ИИ-агента "Елена". Это техническая и пользовательская документация, написанная в формате Markdown для удобства чтения и редактирования.
+
+📁 Полная структура папки docs/:
+
+docs/
+├── 📄 README.md                      # Главная страница документации
+├── 📄 CONTRIBUTING.md                # Как внести вклад в проект
+├── 📄 CHANGELOG.md                   # История изменений
+├── 📄 CODE_OF_CONDUCT.md             # Правила поведения
+├── 📄 SECURITY.md                    # Политика безопасности
+├── 📁 getting-started/               # Начало работы
+│   ├── 📄 installation.md            # Установка
+│   ├── 📄 configuration.md           # Настройка
+│   ├── 📄 quick-start.md             # Быстрый старт
+│   └── 📄 deployment.md              # Развертывание
+├── 📁 user-guide/                    # Руководство пользователя
+│   ├── 📄 overview.md                # Обзор возможностей
+│   ├── 📄 interfaces/                # Интерфейсы
+│   │   ├── 📄 telegram.md            # Telegram бот
+│   │   ├── 📄 web-interface.md       # Веб-интерфейс
+│   │   ├── 📄 voice-interface.md     # Голосовое управление
+│   │   └── 📄 obsidian-integration.md # Интеграция с Obsidian
+│   ├── 📄 features/                  # Функциональность
+│   │   ├── 📄 document-processing.md # Обработка документов
+│   │   ├── 📄 media-analysis.md      # Анализ медиа
+│   │   ├── 📄 memory-system.md       # Система памяти
+│   │   └── 📄 self-improvement.md    # Самообучение
+│   └── 📄 troubleshooting.md         # Решение проблем
+├── 📁 developer-guide/               # Руководство разработчика
+│   ├── 📄 architecture.md            # Архитектура системы
+│   ├── 📄 code-structure.md          # Структура кода
+│   ├── 📄 api-reference.md           # Справочник API
+│   ├── 📄 database-schema.md         # Схема базы данных
+│   └── 📄 testing.md                 # Тестирование
+├── 📁 technical/                     # Техническая документация
+│   ├── 📄 vector-memory.md           # Векторная память
+│   ├── 📄 embeddings.md              # Эмбеддинги
+│   ├── 📄 indexing.md                # Индексация
+│   ├── 📄 llm-integration.md         # Интеграция LLM
+│   └── 📄 performance-tuning.md      # Оптимизация производительности
+├── 📁 api/                           # API документация
+│   ├── 📄 rest-api.md                # REST API
+│   ├── 📄 websocket-api.md           # WebSocket API
+│   ├── 📄 webhooks.md                # Webhooks
+│   └── 📄 examples/                  # Примеры API
+│       ├── 📄 python-client.md       # Python клиент
+│       ├── 📄 javascript-client.md   # JavaScript клиент
+│       └── 📄 curl-examples.md       # Примеры cURL
+├── 📁 configuration/                 # Конфигурация
+│   ├── 📄 environment-variables.md   # Переменные окружения
+│   ├── 📄 config-files.md            # Файлы конфигурации
+│   ├── 📄 security-config.md         # Настройки безопасности
+│   └── 📄 monitoring-config.md       # Мониторинг
+├── 📁 monitoring/                    # Мониторинг
+│   ├── 📄 logging.md                 # Логирование
+│   ├── 📄 metrics.md                 # Метрики
+│   ├── 📄 alerts.md                  # Оповещения
+│   └── 📄 dashboards.md              # Дашборды
+├── 📁 tutorials/                     # Обучающие материалы
+│   ├── 📄 custom-training.md         # Обучение моделей
+│   ├── 📄 plugin-development.md      # Разработка плагинов
+│   ├── 📄 integration-guide.md       # Интеграция с другими системами
+│   └── 📄 use-cases.md               # Примеры использования
+├── 📁 diagrams/                      # Диаграммы и схемы
+│   ├── 📄 system-architecture.drawio # Диаграмма архитектуры
+│   ├── 📄 data-flow.drawio           # Поток данных
+│   ├── 📄 component-diagram.drawio   # Компонентная диаграмма
+│   └── 📄 deployment-diagram.drawio  # Диаграмма развертывания
+├── 📁 images/                        # Изображения для документации
+│   ├── 📄 architecture-diagram.png
+│   ├── 📄 interface-screenshot.png
+│   └── 📄 logo-docs.png
+├── 📁 translations/                  # Переводы документации
+│   ├── 📁 ru/                        # Русский
+│   │   └── ... (та же структура)
+│   └── 📁 en/                        # Английский
+│       └── ... (та же структура)
+├── 📁 resources/                     # Дополнительные ресурсы
+│   ├── 📄 glossary.md                # Глоссарий
+│   ├── 📄 faq.md                     # Частые вопросы
+│   ├── 📄 best-practices.md          # Лучшие практики
+│   └── 📄 references.md              # Ссылки и ресурсы
+├── 📄 mkdocs.yml                     # Конфигурация MkDocs
+├── 📄 .pages                         # Настройка навигации
+└── 📁 _build/                        # Сгенерированная документация (не коммитить)

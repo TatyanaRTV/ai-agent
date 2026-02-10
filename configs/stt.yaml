@@ -1,0 +1,6 @@
+stt:
+  default_engine: "vosk"
+  language: "ru"
+  vosk_model_path: "/mnt/ai_data/models/vosk/ru"
+  whisper_model_size: "base"
+  use_gpu: true

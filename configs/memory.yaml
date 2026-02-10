@@ -1,0 +1,313 @@
+# Конфигурация системы памяти
+
+# Векторная база данных
+vector_db:
+  # Тип базы данных
+  type: "chromadb"  # chromadb, faiss, weaviate, pinecone
+  
+  # Настройки ChromaDB
+  chromadb:
+    persist_directory: "./data/vectors"
+    collection_name: "elena_memory"
+    embedding_function: "sentence_transformers"
+    distance_function: "cosine"
+    
+    # Параметры коллекции
+    metadata:
+      description: "Долговременная память ИИ-агента Елена"
+      created: "2026-02-05"
+      version: "1.0.0"
+    
+    # Индексация
+    index:
+      type: "hnsw"  # hnsw, ivf, flat
+      params:
+        M: 16
+        ef_construction: 200
+        ef_search: 50
+  
+  # Настройки FAISS
+  faiss:
+    index_path: "./data/vectors/faiss.index"
+    index_type: "IVF4096,Flat"
+    nlist: 4096
+    nprobe: 32
+    metric: "METRIC_INNER_PRODUCT"
+
+# Модели эмбеддингов
+embeddings:
+  # Основная модель
+  model: "paraphrase-multilingual-MiniLM-L12-v2"
+  
+  # Альтернативные модели
+  fallbacks:
+    - "distiluse-base-multilingual-cased-v2"
+    - "paraphrase-multilingual-MiniLM-L12-v2"
+    - "sentence-t5-xxl"
+  
+  # Параметры
+  parameters:
+    device: "cpu"  # cpu, cuda
+    batch_size: 32
+    normalize_embeddings: true
+    show_progress_bar: false
+  
+  # Кэширование
+  cache:
+    enabled: true
+    max_size_mb: 1024
+    ttl_hours: 168  # 7 дней
+
+# Типы памяти
+memory_types:
+  # Кратковременная память
+  short_term:
+    capacity: 100  # Количество элементов
+    ttl_seconds: 3600  # 1 час
+    eviction_policy: "lru"  # lru, lfu, random
+    
+  # Долговременная память
+  long_term:
+    capacity: 10000  # Количество элементов
+    persist: true
+    compression: true
+    compression_level: 6
+    
+  # Рабочая память (контекст)
+  working:
+    capacity: 10
+    ttl_seconds: 300  # 5 минут
+    context_window: 4096  # Токены
+
+# Структура воспоминаний
+memory_structure:
+  # Типы записей
+  entry_types:
+    interaction:
+      description: "Взаимодействия с пользователем"
+      fields:
+        - timestamp
+        - user_input
+        - agent_response
+        - context
+        - emotion
+        - success_rating
+        
+    knowledge:
+      description: "Факты и знания"
+      fields:
+        - category
+        - fact
+        - source
+        - confidence
+        - last_verified
+        
+    experience:
+      description: "Опыт и уроки"
+      fields:
+        - situation
+        - action
+        - result
+        - lesson
+        - improvement
+        
+    document:
+      description: "Обработанные документы"
+      fields:
+        - filename
+        - content_summary
+        - keywords
+        - entities
+        - sentiment
+        
+    image:
+      description: "Анализ изображений"
+      fields:
+        - description
+        - objects
+        - text
+        - colors
+        - metadata
+        
+    audio:
+      description: "Голосовые взаимодействия"
+      fields:
+        - transcript
+        - emotion
+        - speaker
+        - duration
+        
+    reflection:
+      description: "Саморефлексия и критика"
+      fields:
+        - topic
+        - analysis
+        - insights
+        - improvements
+        - date
+
+# Поиск и извлечение
+retrieval:
+  # Стратегии поиска
+  strategies:
+    - name: "semantic"
+      weight: 0.7
+      threshold: 0.3
+      
+    - name: "keyword"
+      weight: 0.2
+      threshold: 0.5
+      
+    - name: "temporal"
+      weight: 0.1
+      threshold: 0.7
+  
+  # Параметры поиска
+  parameters:
+    top_k: 10
+    similarity_threshold: 0.3
+    diversity_penalty: 0.0
+    rerank: false
+    rerank_model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    
+  # Фильтры
+  filters:
+    enabled: true
+    by_type: true
+    by_date: true
+    by_confidence: true
+    by_relevance: true
+
+# Консолидация памяти
+consolidation:
+  # Расписание
+  schedule: "0 4 * * *"  # Ежедневно в 4:00
+  
+  # Параметры
+  enabled: true
+  similarity_threshold: 0.8
+  max_cluster_size: 10
+  min_cluster_size: 2
+  
+  # Стратегии
+  strategies:
+    - deduplication
+    - summarization
+    - categorization
+    - abstraction
+
+# Очистка памяти
+cleanup:
+  # Расписание
+  schedule: "0 3 * * *"  # Ежедневно в 3:00
+  
+  # Политики
+  policies:
+    - type: "age"
+      max_age_days: 90
+      action: "archive"
+      
+    - type: "relevance"
+      min_access_count: 0
+      max_age_without_access_days: 30
+      action: "delete"
+      
+    - type: "confidence"
+      min_confidence: 0.3
+      action: "review"
+      
+    - type: "size"
+      max_size_gb: 10
+      action: "compress"
+  
+  # Действия
+  actions:
+    archive:
+      enabled: true
+      directory: "./data/backups/memory"
+      compression: true
+      
+    delete:
+      enabled: true
+      confirmation_required: false
+      
+    compress:
+      enabled: true
+      algorithm: "zstd"
+      level: 3
+
+# Резервное копирование
+backup:
+  # Расписание
+  schedule: "0 2 * * 0"  # Еженедельно в воскресенье в 2:00
+  
+  # Параметры
+  enabled: true
+  directory: "./data/backups"
+  keep_backups: 4
+  compression: true
+  encryption: false
+  
+  # Валидация
+  validate: true
+  checksum: true
+  verify_integrity: true
+
+# Мониторинг
+monitoring:
+  # Метрики
+  metrics:
+    - total_entries
+    - memory_usage
+    - retrieval_time
+    - hit_rate
+    - accuracy
+    
+  # Алерты
+  alerts:
+    - metric: "memory_usage"
+      threshold: 0.8  # 80%
+      action: "cleanup"
+      
+    - metric: "retrieval_time"
+      threshold: 1000  # мс
+      action: "optimize"
+      
+    - metric: "hit_rate"
+      threshold: 0.3  # 30%
+      action: "review"
+
+# Оптимизация
+optimization:
+  # Расписание
+  schedule: "0 5 * * *"  # Ежедневно в 5:00
+  
+  # Действия
+  actions:
+    - rebuild_indexes
+    - vacuum_database
+    - update_statistics
+    - clear_caches
+    
+  # Параметры
+  vacuum: true
+  analyze: true
+  reindex: true
+  cache_warmup: true
+
+# Отладка
+debug:
+  # Логирование
+  log_retrievals: true
+  log_storage: false
+  log_cleanup: true
+  log_backups: true
+  
+  # Тестирование
+  test_queries: []
+  benchmark: false
+  profile: false
+  
+  # Экспорт
+  export_format: "json"
+  export_path: "./data/exports"

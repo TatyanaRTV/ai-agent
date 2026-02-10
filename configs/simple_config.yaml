@@ -1,0 +1,58 @@
+# ПРОСТЫЕ НАСТРОЙКИ ЕЛЕНЫ
+
+# Основные настройки
+agent:
+  name: "Елена"
+  version: "1.0"
+  language: "ru"
+  voice_gender: "female"
+  
+# Папки проекта
+paths:
+  home: "/mnt/ai_data/II_AGENT"  # Ваша папка
+  data: "./data"
+  logs: "./logs"
+  models: "./models"
+  temp: "./data/temp"
+  
+# Возможности (включить/выключить)
+features:
+  voice_input: true      # Голосовой ввод
+  voice_output: true     # Голосовой вывод
+  document_reading: true # Чтение документов
+  screen_analysis: true  # Анализ экрана
+  telegram_bot: false    # Telegram бот (пока выключен)
+  web_interface: false   # Веб-интерфейс (пока выключен)
+  
+# Голосовые настройки
+voice:
+  speed: 150            # Скорость речи (50-300)
+  volume: 0.9           # Громкость (0.0-1.0)
+  voice_name: "Елена"   # Имя голоса
+  
+# Настройки памяти
+memory:
+  max_size_mb: 1000     # Максимальный размер памяти
+  backup_days: 7        # Создавать бэкап каждые 7 дней
+  cleanup_days: 30      # Удалять старые файлы после 30 дней
+  
+# Простые команды
+commands:
+  wake_words:           # Ключевые слова для активации
+    - "елена"
+    - "лена"
+    - "помоги"
+    - "внимание"
+    
+  exit_words:           # Слова для выхода
+    - "выход"
+    - "стоп"
+    - "пока"
+    
+# Цвета интерфейса (для красоты)
+colors:
+  primary: "#FF6B9D"    # Розовый (основной)
+  secondary: "#6B5BFF"  # Фиолетовый
+  success: "#4CAF50"    # Зеленый (успех)
+  error: "#F44336"      # Красный (ошибка)
+  warning: "#FF9800"    # Оранжевый (предупреждение)

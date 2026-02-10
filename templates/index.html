@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎀 Елена - ИИ Агент</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Заголовок -->
+        <header class="header">
+            <h1><i class="fas fa-robot"></i> 🎀 Елена - ИИ Агент</h1>
+            <p class="subtitle">Универсальный самообучающийся помощник с женским голосом</p>
+        </header>
+
+        <!-- Основное содержимое -->
+        <div class="main-content">
+            <!-- Боковая панель -->
+            <aside class="sidebar">
+                <div class="user-info">
+                    <div class="avatar">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <h3>Елена</h3>
+                    <p class="status online"><i class="fas fa-circle"></i> В сети</p>
+                </div>
+
+                <nav class="nav">
+                    <ul>
+                        <li class="active"><a href="#"><i class="fas fa-comment"></i> Чат</a></li>
+                        <li><a href="#"><i class="fas fa-file-alt"></i> Документы</a></li>
+                        <li><a href="#"><i class="fas fa-image"></i> Изображения</a></li>
+                        <li><a href="#"><i class="fas fa-microphone"></i> Голос</a></li>
+                        <li><a href="#"><i class="fas fa-cog"></i> Настройки</a></li>
+                    </ul>
+                </nav>
+
+                <div class="system-info">
+                    <h4><i class="fas fa-info-circle"></i> Статус системы</h4>
+                    <div class="info-item">
+                        <span>Память:</span>
+                        <div class="progress-bar">
+                            <div class="progress" style="width: 65%;"></div>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <span>CPU:</span>
+                        <span class="value">24%</span>
+                    </div>
+                    <div class="info-item">
+                        <span>Обновлено:</span>
+                        <span class="value">Только что</span>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Область чата -->
+            <section class="chat-area">
+                <!-- Заголовок чата -->
+                <div class="chat-header">
+                    <h2><i class="fas fa-comments"></i> Чат с Еленой</h2>
+                    <div class="chat-controls">
+                        <button class="btn voice-btn" id="voiceBtn">
+                            <i class="fas fa-microphone"></i> Голос
+                        </button>
+                        <button class="btn clear-btn" id="clearBtn">
+                            <i class="fas fa-trash"></i> Очистить
+                        </button>
+                    </div>
+                </div>
+
+                <!-- История чата -->
+                <div class="chat-history" id="chatHistory">
+                    <!-- Сообщения будут добавляться здесь -->
+                    <div class="message agent">
+                        <div class="avatar">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="content">
+                            <div class="text">
+                                Привет! Я Елена, ваш ИИ-помощник. Чем могу помочь?
+                            </div>
+                            <div class="time">12:00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Панель ввода -->
+                <div class="input-area">
+                    <div class="input-group">
+                        <input type="text" 
+                               id="messageInput" 
+                               placeholder="Введите ваше сообщение..."
+                               autocomplete="off">
+                        <button class="btn send-btn" id="sendBtn">
+                            <i class="fas fa-paper-plane"></i> Отправить
+                        </button>
+                    </div>
+                    
+                    <div class="quick-actions">
+                        <button class="quick-btn" data-action="document">
+                            <i class="fas fa-file-upload"></i> Документ
+                        </button>
+                        <button class="quick-btn" data-action="image">
+                            <i class="fas fa-image"></i> Изображение
+                        </button>
+                        <button class="quick-btn" data-action="screen">
+                            <i class="fas fa-desktop"></i> Скриншот
+                        </button>
+                        <button class="quick-btn" data-action="help">
+                            <i class="fas fa-question-circle"></i> Помощь
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Футер -->
+        <footer class="footer">
+            <p>🎀 ИИ-агент "Елена" версия 1.0.0 | Создан с любовью для Татьяны</p>
+            <p class="copyright">© 2026 Все права защищены</p>
+        </footer>
+    </div>
+
+    <!-- Модальное окно для загрузки файлов -->
+    <div class="modal" id="fileModal">
+        <div class="modal-content">
+            <h3><i class="fas fa-upload"></i> Загрузка файла</h3>
+            <input type="file" id="fileInput" multiple>
+            <div class="modal-actions">
+                <button class="btn" id="cancelBtn">Отмена</button>
+                <button class="btn primary" id="uploadBtn">Загрузить</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

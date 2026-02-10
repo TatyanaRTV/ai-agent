@@ -1,0 +1,151 @@
+"""
+ПРОСТОЙ ГОЛОСОВОЙ МОДУЛЬ
+Говорит и слушает (если есть микрофон)
+"""
+
+import pyttsx3
+import speech_recognition as sr
+import time
+
+class SimpleVoice:
+    """Простой голосовой помощник"""
+    
+    def __init__(self):
+        print("🎤 Инициализирую голосовой модуль...")
+        
+        # Инициализация синтезатора речи
+        try:
+            self.engine = pyttsx3.init()
+            
+            # Настройка голоса
+            voices = self.engine.getProperty('voices')
+            
+            # Ищем русский женский голос
+            for voice in voices:
+                if 'russian' in voice.languages or 'ru' in str(voice.languages):
+                    if 'female' in voice.name.lower() or 'женск' in voice.name.lower():
+                        self.engine.setProperty('voice', voice.id)
+                        print(f"✅ Найден голос: {voice.name}")
+                        break
+            
+            # Настройки
+            self.engine.setProperty('rate', 150)  # Скорость
+            self.engine.setProperty('volume', 0.9) # Громкость
+            
+            print("✅ Синтезатор речи готов!")
+            
+        except Exception as e:
+            print(f"⚠️ Не удалось инициализировать синтезатор: {e}")
+            self.engine = None
+        
+        # Инициализация распознавания речи
+        try:
+            self.recognizer = sr.Recognizer()
+            print("✅ Распознавание речи готово!")
+        except:
+            print("⚠️ Распознавание речи недоступно")
+            self.recognizer = None
+    
+    def speak(self, text):
+        """Произнести текст"""
+        if self.engine:
+            print(f"🎤 Говорю: {text}")
+            self.engine.say(text)
+            self.engine.runAndWait()
+        else:
+            print(f"💬 (Без голоса): {text}")
+    
+    def listen(self):
+        """Слушать голос команду"""
+        if not self.recognizer:
+            return None
+        
+        try:
+            with sr.Microphone() as source:
+                print("🎤 Слушаю... (говорите сейчас)")
+                
+                # Настройка для уменьшения шума
+                self.recognizer.adjust_for_ambient_noise(source, duration=0.5)
+                
+                # Слушаем
+                audio = self.recognizer.listen(source, timeout=5, phrase_time_limit=5)
+                
+                # Распознаем
+                try:
+                    text = self.recognizer.recognize_google(audio, language="ru-RU")
+                    print(f"🎤 Вы сказали: {text}")
+                    return text
+                except sr.UnknownValueError:
+                    print("🎤 Не поняла, что вы сказали")
+                    return None
+                except sr.RequestError:
+                    print("🎤 Ошибка подключения к сервису распознавания")
+                    return None
+                    
+        except Exception as e:
+            print(f"🎤 Ошибка микрофона: {e}")
+            return None
+    
+    def test_voice(self):
+        """Тест голоса"""
+        print("\n🔊 ТЕСТ ГОЛОСА")
+        print("=" * 30)
+        
+        test_phrases = [
+            "Привет! Я Елена, ваш голосовой помощник.",
+            "Рада вас слышать!",
+            "Как у вас дела сегодня?",
+            "Чем могу помочь?",
+            "До свидания! Возвращайтесь скорее."
+        ]
+        
+        for phrase in test_phrases:
+            self.speak(phrase)
+            time.sleep(1)
+        
+        print("\n✅ Тест голоса завершен!")
+    
+    def test_listen(self):
+        """Тест распознавания речи"""
+        if not self.recognizer:
+            print("❌ Распознавание речи недоступно")
+            return
+        
+        print("\n🎤 ТЕСТ РАСПОЗНАВАНИЯ РЕЧИ")
+        print("=" * 40)
+        print("Говорите после сигнала...")
+        
+        for i in range(3):
+            print(f"\nПопытка {i+1}/3...")
+            text = self.listen()
+            
+            if text:
+                self.speak(f"Вы сказали: {text}")
+            else:
+                self.speak("Я не расслышала, повторите пожалуйста")
+            
+            time.sleep(1)
+        
+        print("\n✅ Тест распознавания завершен!")
+
+# Простой пример использования
+if __name__ == "__main__":
+    print("🎤 ТЕСТ ПРОСТОГО ГОЛОСОВОГО МОДУЛЯ")
+    print("=" * 40)
+    
+    voice = SimpleVoice()
+    
+    # Тест голоса
+    voice.test_voice()
+    
+    # Спросить, тестировать ли распознавание
+    answer = input("\nПротестировать распознавание речи? (да/нет): ")
+    
+    if answer.lower() in ['да', 'yes', 'y']:
+        voice.test_listen()
+    
+    print("\n🎤 Голосовой модуль готов к работе!")
+    print("\nПример использования:")
+    print("1. voice.speak('Привет, как дела?')")
+    print("2. text = voice.listen()")
+    print("3. if text: print(f'Вы сказали: {text}')")

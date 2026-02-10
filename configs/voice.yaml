@@ -1,0 +1,307 @@
+# Конфигурация голосового интерфейса
+
+# Движки синтеза речи (TTS)
+tts:
+  # Основной движок
+  primary: "pyttsx3"
+  
+  # Альтернативные движки
+  fallbacks: ["rhvoice", "gtts"]
+  
+  # Настройки pyttsx3
+  pyttsx3:
+    # Голоса
+    voices:
+      russian_female:
+        name: "Елена"
+        id: "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\Voices\Tokens\TTS_MS_RU-RU_IRINA_11.0"
+        languages: ["ru", "ru-RU"]
+        gender: "female"
+        
+      russian_male:
+        name: "Дмитрий"
+        id: "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\Voices\Tokens\TTS_MS_RU-RU_PAVEL_11.0"
+        languages: ["ru", "ru-RU"]
+        gender: "male"
+    
+    # Параметры
+    rate: 150      # Скорость (50-300)
+    volume: 0.9    # Громкость (0.0-1.0)
+    pitch: 1.0     # Тон (0.5-2.0)
+  
+  # Настройки RHVoice
+  rhvoice:
+    # Голоса
+    voices:
+      elena:
+        name: "Елена"
+        language: "ru"
+        gender: "female"
+        
+      aleksandr:
+        name: "Александр"
+        language: "ru"
+        gender: "male"
+    
+    # Параметры
+    rate: 150
+    volume: 100
+    pitch: 50
+  
+  # Настройки Google TTS
+  gtts:
+    language: "ru"
+    slow: false
+    tld: "com"  # Домен Google
+
+# Движки распознавания речи (STT)
+stt:
+  # Основной движок
+  primary: "whisper"
+  
+  # Альтернативные движки
+  fallbacks: ["vosk", "google"]
+  
+  # Настройки Whisper
+  whisper:
+    # Модели
+    model: "base"  # tiny, base, small, medium, large
+    
+    # Параметры
+    language: "ru"
+    task: "transcribe"  # transcribe или translate
+    temperature: 0.0
+    best_of: 5
+    beam_size: 5
+    patience: 1.0
+    length_penalty: 1.0
+    suppress_tokens: "-1"
+    initial_prompt: ""
+    condition_on_previous_text: true
+    fp16: true
+    compression_ratio_threshold: 2.4
+    logprob_threshold: -1.0
+    no_speech_threshold: 0.6
+    
+    # Оптимизация
+    device: "auto"  # cpu, cuda, auto
+    compute_type: "float16"
+    cpu_threads: 4
+    num_workers: 1
+  
+  # Настройки Vosk
+  vosk:
+    # Модели
+    model_path: "./models/vosk/ru"
+    
+    # Параметры
+    sample_rate: 16000
+    partial_words: true
+    
+    # Словарь
+    words: []
+    grammar: []
+  
+  # Настройки Google Speech Recognition
+  google:
+    language: "ru-RU"
+    show_all: false
+
+# Аудио параметры
+audio:
+  # Форматы
+  input_formats: [".wav", ".mp3", ".ogg", ".flac", ".m4a"]
+  output_formats: [".wav", ".mp3"]
+  
+  # Качество
+  sample_rate: 16000
+  channels: 1
+  sample_width: 2  # 16-bit
+  
+  # Кодеки
+  codec:
+    wav: "pcm_s16le"
+    mp3: "libmp3lame"
+    bitrate: "128k"
+  
+  # Обработка
+  noise_reduction: true
+  normalize: true
+  remove_silence: true
+  
+  # Параметры записи
+  record:
+    chunk_size: 1024
+    format: "int16"
+    threshold: 0.5
+    timeout: 5
+    phrase_time_limit: 10
+    calibration_time: 0.5
+
+# Голосовые команды
+commands:
+  # Ключевые слова для активации
+  wake_words:
+    - "елена"
+    - "лена"
+    - "помоги"
+    - "слушай"
+    - "внимание"
+    - "эй"
+  
+  # Команды управления
+  control_commands:
+    stop: ["стоп", "остановись", "хватит"]
+    pause: ["пауза", "подожди"]
+    continue: ["продолжай", "дальше"]
+    repeat: ["повтори", "еще раз"]
+    louder: ["громче", "по громче"]
+    quieter: ["тише", "по тише"]
+    faster: ["быстрее", "по быстрее"]
+    slower: ["медленнее", "по медленнее"]
+  
+  # Системные команды
+  system_commands:
+    status: ["статус", "как дела", "работаешь"]
+    help: ["помощь", "что ты умеешь", "команды"]
+    memory: ["память", "что помнишь"]
+    cleanup: ["очистка", "почисти", "убери мусор"]
+    shutdown: ["выключение", "заверши работу", "спокойной ночи"]
+    restart: ["перезагрузка", "перезапуск"]
+  
+  # Действия
+  action_commands:
+    time: ["который час", "сколько времени", "время"]
+    date: ["какое число", "какая дата", "дата"]
+    weather: ["погода", "какая погода", "температура"]
+    news: ["новости", "что нового", "события"]
+    joke: ["шутка", "расскажи шутку", "пошути"]
+    quote: ["цитата", "мудрость", "высказывание"]
+
+# Эмоции и интонации
+emotions:
+  # Настройки эмоций
+  enabled: true
+  
+  # Эмоциональные профили
+  profiles:
+    neutral:
+      rate: 150
+      pitch: 1.0
+      volume: 0.9
+      
+    happy:
+      rate: 170
+      pitch: 1.2
+      volume: 1.0
+      
+    sad:
+      rate: 130
+      pitch: 0.8
+      volume: 0.8
+      
+    excited:
+      rate: 200
+      pitch: 1.3
+      volume: 1.0
+      
+    calm:
+      rate: 140
+      pitch: 0.9
+      volume: 0.7
+  
+  # Сопоставление эмоций с текстом
+  mapping:
+    happy_words: ["отлично", "прекрасно", "замечательно", "ура", "рад"]
+    sad_words: ["плохо", "грустно", "печально", "жаль", "сочувствую"]
+    excited_words: ["вау", "удивительно", "невероятно", "потрясающе"]
+    calm_words: ["спокойно", "тихо", "мирно", "умиротворенно"]
+
+# Кэширование
+cache:
+  # Кэш синтезированной речи
+  tts_cache:
+    enabled: true
+    max_size_mb: 1024
+    ttl_hours: 24
+    directory: "./data/cache/tts"
+  
+  # Кэш распознанной речи
+  stt_cache:
+    enabled: true
+    max_size_mb: 512
+    ttl_hours: 12
+    directory: "./data/cache/stt"
+  
+  # Кэш аудиофайлов
+  audio_cache:
+    enabled: true
+    max_size_mb: 2048
+    ttl_hours: 48
+    directory: "./data/cache/audio"
+
+# Производительность
+performance:
+  # Потоки
+  tts_threads: 2
+  stt_threads: 2
+  audio_threads: 4
+  
+  # Буферы
+  audio_buffer_size: 4096
+  queue_size: 100
+  
+  # Оптимизации
+  preload_voices: true
+  lazy_loading: false
+  batch_processing: true
+
+# Устройства
+devices:
+  # Входные устройства (микрофоны)
+  input:
+    # Автоопределение
+    auto_select: true
+    
+    # Ручной выбор
+    device_index: null
+    device_name: ""
+    
+    # Параметры
+    channels: 1
+    rate: 16000
+    format: "int16"
+  
+  # Выходные устройства (динамики)
+  output:
+    # Автоопределение
+    auto_select: true
+    
+    # Ручной выбор
+    device_index: null
+    device_name: ""
+    
+    # Параметры
+    channels: 2
+    rate: 44100
+    format: "float32"
+  
+  # Тестирование устройств
+  test_on_startup: true
+  calibration_duration: 3  # секунды
+
+# Отладка
+debug:
+  # Логирование
+  log_audio: false
+  log_transcriptions: true
+  log_emotions: true
+  
+  # Тестирование
+  test_voices: false
+  test_recognition: false
+  test_devices: false
+  
+  # Профилирование
+  profile_performance: false
+  save_waveforms: false

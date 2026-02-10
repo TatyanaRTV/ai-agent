@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Елена - ИИ Помощник</title>
+    <link rel="icon" href="/static/images/favicon.ico" type="image/x-icon">
+    <style>
+        body {
+            background: url('/static/images/background.jpg') no-repeat center center fixed;
+            background-size: cover;
+            font-family: Arial, sans-serif;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+        }
+        
+        .logo {
+            width: 50px;
+            height: 50px;
+            margin-right: 15px;
+        }
+        
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .icon {
+            width: 24px;
+            height: 24px;
+            margin: 0 10px;
+            cursor: pointer;
+        }
+        
+        .loading {
+            width: 100px;
+            height: 100px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="/static/images/logo.png" alt="Логотип Елены" class="logo">
+        <h1>ИИ-Помощник Елена</h1>
+        
+        <div style="margin-left: auto;">
+            <img src="/static/images/icons/voice.png" alt="Голос" class="icon" id="voice-btn">
+            <img src="/static/images/icons/chat.png" alt="Чат" class="icon" id="chat-btn">
+            <img src="/static/images/icons/settings.png" alt="Настройки" class="icon" id="settings-btn">
+            <img src="/static/images/avatar_small.png" alt="Аватар" class="avatar">
+        </div>
+    </div>
+    
+    <div class="chat-container">
+        <div class="message ai-message">
+            <img src="/static/images/avatar_small.png" alt="Елена" class="avatar">
+            <div class="message-content">
+                Привет! Я Елена, ваш ИИ-помощник. Чем могу помочь?
+            </div>
+            <img src="/static/images/emojis/smile.png" alt="😊" class="emoji">
+        </div>
+    </div>
+    
+    <div class="loading-container" id="loading">
+        <img src="/static/images/loading.gif" alt="Загрузка..." class="loading">
+        <p>Елена думает...</p>
+    </div>
+</body>
+</html>

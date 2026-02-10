@@ -1,0 +1,48 @@
+# ============================================
+# ПРИМЕР КОНФИГУРАЦИОННОГО ФАЙЛА
+# Скопируйте этот файл как configs/main.yaml
+# и отредактируйте под свои нужды
+# ============================================
+
+# Основные настройки агента
+agent:
+  name: "Елена"
+  language: "ru"
+  voice_gender: "female"
+
+# Пути к данным
+paths:
+  home: "/home/ваше_имя/ai-agent"
+  obsidian: "/home/ваше_имя/Obsidian"
+
+# Включенные функции
+features:
+  voice: true
+  vision: true
+  memory: true
+  telegram: false
+  browser: false
+
+# Голосовые настройки
+voice:
+  engine: "pyttsx3"
+  voice_name: "Елена"
+  rate: 150
+  volume: 0.9
+
+# Память
+memory:
+  vector_db: "chromadb"
+  persist_directory: "./data/vectors"
+
+# Логирование
+logging:
+  level: "INFO"
+  file: "./logs/app.log"
+
+# ============================================
+# ПРИМЕЧАНИЕ:
+# 1. Скопируйте этот файл: cp config.example.yaml configs/main.yaml
+# 2. Отредактируйте пути и настройки
+# 3. Для секретных данных используйте configs/secrets.yaml
+# ============================================

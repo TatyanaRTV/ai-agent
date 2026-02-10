@@ -1,0 +1,39 @@
+В корневой папке /mnt/ai_data/ai-agent должны находиться основные файлы проекта, конфигурации и скрипты управления ИИ-агента "Елена".
+
+📁 Полная структура корневой папки:
+
+/mnt/ai_data/ai-agent/
+├── 📁 .venv/                          # Виртуальное окружение Python
+├── 📁 .github/                        # GitHub Actions и настройки
+├── 📁 docs/                           # Документация проекта
+├── 📁 src/                            # Исходный код проекта
+├── 📁 tests/                          # Тесты
+├── 📁 data/                           # Данные проекта
+├── 📁 models/                         # Модели ИИ
+├── 📁 configs/                        # Конфигурационные файлы
+├── 📁 requirements/                   # Зависимости
+├── 📁 logs/                           # Логи приложения
+├── 📁 templates/                      # HTML шаблоны
+├── 📁 static/                         # Статические файлы
+├── 📁 migrations/                     # Миграции базы данных
+├── 📁 scripts/                        # Скрипты развертывания
+├── 📁 Ai_Obsidian/                    # Хранилище Obsidian
+├── 📄 README.md                       # Основная документация
+├── 📄 CONTRIBUTING.md                 # Руководство для контрибьюторов
+├── 📄 LICENSE                         # Лицензия MIT
+├── 📄 setup.py                        # Установочный скрипт
+├── 📄 requirements.txt                # Основные зависимости
+├── 📄 .gitignore                      # Игнорируемые файлы Git
+├── 📄 .env.example                    # Пример переменных окружения
+├── 📄 config.example.yaml             # Пример конфигурации
+├── 📄 docker-compose.yml              # Docker Compose конфигурация
+├── 📄 Dockerfile                      # Docker образ
+├── 📄 pyproject.toml                  # Конфигурация Python проекта
+├── 📄 Makefile                        # Команды Make
+├── 📄 start_elena.py                  # Основной скрипт запуска
+├── 📄 start_elena.sh                  # Скрипт запуска (bash)
+├── 📄 install_elena.sh                # Скрипт установки
+├── 📄 elena.service                   # Systemd сервис
+├── 📄 elena_config.yaml               # Основная конфигурация Елены
+├── 📄 .python-version                 # Версия Python
+└── 📄 .pre-commit-config.yaml         # Pre-commit хуки
