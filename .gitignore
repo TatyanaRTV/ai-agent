@@ -1,7 +1,6 @@
-
-### **`.gitignore`**
-```gitignore
-# Python
+# ============================================
+# PYTHON & BUILD
+# ============================================
 __pycache__/
 *.py[cod]
 *$py.class
@@ -26,7 +25,9 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# Virtual Environment
+# ============================================
+# VIRTUAL ENVIRONMENTS
+# ============================================
 venv/
 .venv/
 env/
@@ -34,16 +35,21 @@ ENV/
 env.bak/
 venv.bak/
 
-# IDE
+# ============================================
+# IDE & OS (VS Code, PyCharm, Mac, Win)
+# ============================================
 .vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 .idea/
+*.iws
+*.iml
+*.ipr
 *.swp
 *.swo
 *~
-*.sublime-workspace
-*.sublime-project
-
-# OS
 .DS_Store
 .DS_Store?
 ._*
@@ -52,90 +58,65 @@ venv.bak/
 ehthumbs.db
 Thumbs.db
 
-# Configs
-configs/secrets.yaml
+# ============================================
+# CONFIGS & SECRETS (КРИТИЧНО ДЛЯ БЕЗОПАСНОСТИ)
+# ============================================
 .env
+configs/secrets.yaml
 *.key
 *.pem
 *.cert
 *.crt
 
-# Data
-data/temp/*
-data/cache/*
-data/logs/*
-!data/logs/.gitkeep
-!data/temp/.gitkeep
-!data/cache/.gitkeep
-
-# Models
-models/**/*
-!models/.gitkeep
-
-# Logs
-logs/*
-!logs/.gitkeep
-
-# Backups
-*.backup
-*.bak
-*.old
-
-# Jupyter
-.ipynb_checkpoints
-
-# PyCharm
-.idea/
-*.iws
-*.iml
-*.ipr
-
-# VS Code
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
-# Test coverage
-.coverage
-.coverage.*
-htmlcov/
-.pytest_cache/
-
-# MyPy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Pyre type checker
-.pyre/
-
-# Pytype static type analyzer
-.pytype/
-
-# Cython debug symbols
-cython_debug/
-
-# Database
+# ============================================
+# DATA & MODELS (КРУПНЫЕ ФАЙЛЫ)
+# ============================================
+data/
+models/
+Ai_Obsidian/
 *.db
 *.sqlite
 *.sqlite3
 
-# Temporary files
+# Исключения для структуры папок (сохраняем пустые папки через .gitkeep)
+!data/logs/.gitkeep
+!data/temp/.gitkeep
+!data/cache/.gitkeep
+!data/vectors/.gitkeep
+!data/indexes/.gitkeep
+!data/processed/.gitkeep
+!data/raw/.gitkeep
+!models/.gitkeep
+
+# ============================================
+# LOGS & TEMPORARY
+# ============================================
+logs/
+*.backup
+*.bak
+*.old
 *.tmp
 *.temp
 temp/
-
-# Cache
-.cache/
 .cache/
 
-# Documentation
-docs/_build/
-docs/.build/
+# ============================================
+# TESTING & ANALYSIS
+# ============================================
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.ipynb_checkpoints
 
-# Media files (large)
+# ============================================
+# MEDIA (ИСКЛЮЧАЕМ ТЯЖЕЛЫЕ ФАЙЛЫ)
+# ============================================
 *.mp4
 *.mp3
 *.wav
@@ -146,25 +127,7 @@ docs/.build/
 *.jpeg
 *.gif
 *.bmp
-
-# Archives
 *.zip
 *.tar.gz
 *.7z
 *.rar
-
-# Exceptions
-!data/vectors/.gitkeep
-!data/indexes/.gitkeep
-!data/processed/.gitkeep
-!data/raw/.gitkeep
-# Obsidian vault
-Ai_Obsidian/
-
-# Large data folders
-.venv/
-models/
-data/
-logs/
-configs/secrets.yaml
-.env
