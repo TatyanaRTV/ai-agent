@@ -1,6 +1,5 @@
-"""
-Модуль базы данных для Елены
-"""
+#Модуль базы данных
+
 import logging
 import os
 import subprocess
@@ -13,8 +12,7 @@ logger = logging.getLogger(__name__)
 Base = declarative_base()
 
 class DatabaseManager:
-    """Менеджер базы данных"""
-
+    #Менеджер базы данных
     def __init__(self, database_url: str = None):
         from src.config import settings
 
@@ -41,25 +39,25 @@ class DatabaseManager:
         logger.info(f"Инициализирован менеджер БД: {self.database_url}")
 
     def get_session(self):
-        """Получение сессии БД"""
+        #Получение сессии БД
         return self.ScopedSession()
 
     def close_session(self):
-        """Закрытие сессии"""
+        #Закрытие сессии
         self.ScopedSession.remove()
 
     def create_tables(self):
-        """Создание всех таблиц (для разработки)"""
+        #Создание всех таблиц (для разработки)
         Base.metadata.create_all(bind=self.engine)
         logger.info("Таблицы базы данных созданы")
 
     def drop_tables(self):
-        """Удаление всех таблиц (для тестирования)"""
+        #Удаление всех таблиц (для тестирования)
         Base.metadata.drop_all(bind=self.engine)
         logger.info("Таблицы базы данных удалены")
 
     def run_migrations(self):
-        """Запуск миграций через Alembic"""
+        #Запуск миграций через Alembic
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         os.chdir(project_root)
 
@@ -85,13 +83,13 @@ class DatabaseManager:
 db_manager = None
 
 def init_database(database_url: str = None):
-    """Инициализация базы данных"""
+    #Инициализация базы данных
     global db_manager
     db_manager = DatabaseManager(database_url)
     return db_manager
 
 def get_db():
-    """Зависимость для FastAPI"""
+    #Зависимость для FastAPI
     db = db_manager.get_session()
     try:
         yield db
