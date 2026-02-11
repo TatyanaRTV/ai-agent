@@ -31,7 +31,6 @@ coloredlogs==15.0.1
 compizconfig-python==0.9.14.1
 configobj==5.0.6
 cryptography==46.0.5
-cupshelpers==1.0
 cycler==0.11.0
 dataclasses-json==0.6.7
 decorator==4.4.2
@@ -216,7 +215,6 @@ typing-inspection==0.4.2
 typing_extensions==4.15.0
 tzdata==2025.3
 ubuntu-drivers-common==0.0.0
-ubuntu-pro-client==8001
 ufoLib2==0.13.1
 unicodedata2==14.0.0
 Unidecode==1.3.3
