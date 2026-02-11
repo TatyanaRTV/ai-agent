@@ -131,3 +131,5 @@ dmypy.json
 *.tar.gz
 *.7z
 *.rar
+.ssh_deploy/
+deploy_watch.sh
