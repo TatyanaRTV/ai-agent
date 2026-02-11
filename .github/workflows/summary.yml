@@ -1,0 +1,33 @@
+name: Summarize new issues
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  summary:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Используем проверенный экшен для OpenAI или аналогичный
+      - name: Get AI Summary
+        id: ai
+        uses: proxmoxer/ai-summary-action@v1 # Пример рабочего экшена (нужен ключ)
+        with:
+          api-key: ${{ secrets.OPENAI_API_KEY }} # Вам нужно добавить этот секрет в Settings
+          prompt: "Summarize this issue in one paragraph: ${{ github.event.issue.title }} - ${{ github.event.issue.body }}"
+
+      - name: Comment with AI summary
+        run: |
+          # Используем переменную окружения, чтобы избежать проблем с кавычками
+          gh issue comment "$ISSUE_NUMBER" --body "$BODY"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          BODY: ${{ steps.ai.outputs.summary }}
