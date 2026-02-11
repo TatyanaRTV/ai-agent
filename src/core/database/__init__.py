@@ -1,14 +1,15 @@
 """
 Модуль базы данных для Елены
 """
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, scoped_session
 import logging
+import os
+import subprocess
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, scoped_session, declarative_base
 
 logger = logging.getLogger(__name__)
 
-# Базовый класс для моделей
+# Базовый класс для моделей (обновлено для SQLAlchemy 2.0)
 Base = declarative_base()
 
 class DatabaseManager:
@@ -59,9 +60,6 @@ class DatabaseManager:
 
     def run_migrations(self):
         """Запуск миграций через Alembic"""
-        import subprocess
-        import os
-
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         os.chdir(project_root)
 
