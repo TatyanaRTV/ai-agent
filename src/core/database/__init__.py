@@ -1,4 +1,4 @@
-#Модуль базы данных
+# Модуль базы данных
 
 import logging
 import os
@@ -12,8 +12,9 @@ logger = logging.getLogger(__name__)
 Base = declarative_base()
 
 class DatabaseManager:
-    #Менеджер базы данных
+    # Менеджер базы данных
     def __init__(self, database_url: str = None):
+        # Импорт внутри для избежания круговых зависимостей
         from src.config import settings
 
         self.database_url = database_url or settings.DATABASE_URL
@@ -39,26 +40,27 @@ class DatabaseManager:
         logger.info(f"Инициализирован менеджер БД: {self.database_url}")
 
     def get_session(self):
-        #Получение сессии БД
+        # Получение сессии БД
         return self.ScopedSession()
 
     def close_session(self):
-        #Закрытие сессии
+        # Закрытие сессии
         self.ScopedSession.remove()
 
     def create_tables(self):
-        #Создание всех таблиц (для разработки)
+        # Создание всех таблиц (для разработки)
         Base.metadata.create_all(bind=self.engine)
         logger.info("Таблицы базы данных созданы")
 
     def drop_tables(self):
-        #Удаление всех таблиц (для тестирования)
+        # Удаление всех таблиц (для тестирования)
         Base.metadata.drop_all(bind=self.engine)
         logger.info("Таблицы базы данных удалены")
 
     def run_migrations(self):
-        #Запуск миграций через Alembic
+        # Запуск миграций через Alembic
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        old_cwd = os.getcwd()
         os.chdir(project_root)
 
         try:
@@ -74,22 +76,26 @@ class DatabaseManager:
             else:
                 logger.error(f"Ошибка миграции: {result.stderr}")
                 return False
-
         except Exception as e:
             logger.error(f"Ошибка запуска миграций: {e}")
             return False
+        finally:
+            os.chdir(old_cwd)
 
 # Глобальный экземпляр менеджера БД
 db_manager = None
 
 def init_database(database_url: str = None):
-    #Инициализация базы данных
+    # Инициализация базы данных
     global db_manager
     db_manager = DatabaseManager(database_url)
     return db_manager
 
 def get_db():
-    #Зависимость для FastAPI
+    # Зависимость для FastAPI
+    if db_manager is None:
+        raise RuntimeError("db_manager не инициализирован. Вызовите init_database() сначала.")
+    
     db = db_manager.get_session()
     try:
         yield db
