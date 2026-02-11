@@ -2,8 +2,9 @@
 # ЗАВИСИМОСТИ ПРОЕКТА "ЕЛЕНА"
 # ============================================
 
-# ----- ЯДРО ПРОЕКТА -----
-python>=3.10.0
+# ----- БАЗЫ ДАННЫХ (ДОБАВЛЕНО) -----
+SQLAlchemy>=2.0.0
+alembic>=1.11.0
 
 # ----- ОСНОВНЫЕ БИБЛИОТЕКИ -----
 torch>=2.0.0
@@ -15,22 +16,18 @@ sentence-transformers>=2.2.0
 # ----- ОБРАБОТКА ТЕКСТА И ЯЗЫК -----
 nltk>=3.8.0
 spacy>=3.5.0
-https://github.com/explosion/spacy-models/releases/download/ru_core_news_sm-3.5.0/ru_core_news_sm-3.5.0-py3-none-any.whl
+https://github.com
 pymorphy2>=0.9.1
 pymorphy2-dicts-ru>=2.4.417127.4579844
 razdel>=0.5.0
 natasha>=1.5.0
 
 # ----- ГОЛОСОВОЙ ИНТЕРФЕЙС -----
-# Синтез речи
 pyttsx3>=2.90
 rhvoice-wrapper>=0.1.0
 gTTS>=2.3.1
-
-# Распознавание речи
 SpeechRecognition>=3.10.0
 vosk>=0.3.45
-whisper>=1.1.10
 openai-whisper>=20231117
 
 # Аудио обработка
@@ -54,27 +51,18 @@ imageio-ffmpeg>=0.4.8
 ffmpeg-python>=0.2.0
 
 # ----- РАБОТА С ДОКУМЕНТАМИ -----
-# PDF
 PyPDF2>=3.0.0
 pdf2image>=1.16.3
 pdfplumber>=0.10.2
 pikepdf>=8.0.0
-
-# Word
 python-docx>=0.8.11
 docx2txt>=0.8
 docx2pdf>=0.1.8
-
-# Excel
 openpyxl>=3.1.0
 pandas>=2.0.0
 xlrd>=2.0.1
 xlwt>=1.3.0
-
-# PowerPoint
 python-pptx>=0.6.21
-
-# Другие форматы
 markdown>=3.5.0
 beautifulsoup4>=4.12.0
 lxml>=4.9.0
@@ -86,21 +74,14 @@ hnswlib>=0.7.0
 annoy>=1.17.3
 
 # ----- ИНТЕРФЕЙСЫ -----
-# Telegram
 python-telegram-bot>=20.0
 aiogram>=2.25.1
-
-# Веб-интерфейс
 fastapi>=0.100.0
 uvicorn>=0.23.0
 jinja2>=3.1.0
 aiofiles>=23.0.0
 websockets>=12.0
-
-# Obsidian
 obsidianmd>=0.1.0
-
-# Selenium для браузера
 selenium>=4.10.0
 webdriver-manager>=4.0.0
 
