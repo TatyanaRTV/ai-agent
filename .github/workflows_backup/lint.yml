@@ -1,0 +1,47 @@
+#/mnt/ai_data/ai-agent/.github/workflows_backup/lint.yml
+name: Lint and Format
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    # Даем права на запись, чтобы бот мог запушить исправленный код
+    permissions:
+      contents: write
+      
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 mypy black
+
+    - name: Run Black (Auto-format)
+      run: |
+        black src/
+
+    - name: Run flake8
+      run: |
+        flake8 src/ --count --max-complexity=10 --statistics
+
+    - name: Run mypy
+      run: |
+        mypy src/ --ignore-missing-imports
+
+    - name: Commit changes
+      uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        commit_message: "style: auto-format code with Black"

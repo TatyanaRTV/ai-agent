@@ -1,0 +1,56 @@
+#/mnt/ai_data/ai-agent/.github/workflows
+
+name: CI (Lint, Tests and Security)
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  security-events: write
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install tools
+        run: |
+          pip install flake8 mypy black pytest pytest-cov
+          if [ -f "requirements/base.txt" ]; then pip install -r requirements/base.txt; fi
+
+      - name: Auto-format with Black
+        run: black .
+
+      - name: Run Lint (flake8)
+        run: flake8 . --count --max-complexity=10 --statistics
+
+      - name: Run Tests
+        run: pytest --cov=.
+
+      - name: Commit changes (Black)
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style: auto-format with Black"
+
+  analyze:
+    name: Security Scan
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: python
+      - uses: github/codeql-action/analyze@v3
