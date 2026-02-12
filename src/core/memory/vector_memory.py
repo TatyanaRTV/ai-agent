@@ -6,9 +6,11 @@ import chromadb
 from chromadb.config import Settings
 import logging
 from typing import List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import hashlib
+import os
+import shutil
 
 logger = logging.getLogger(__name__)
 
@@ -18,31 +20,36 @@ class VectorMemory:
     def __init__(self, persist_directory: str = "./data/vectors"):
         self.persist_directory = persist_directory
         
-        # Инициализация ChromaDB
-        self.client = chromadb.Client(Settings(
-            chroma_db_impl="duckdb+parquet",
-            persist_directory=persist_directory
-        ))
-        
-        # Коллекция для общих воспоминаний
-        self.memories_collection = self.client.get_or_create_collection(
-            name="memories",
-            metadata={"description": "Долговременная память агента"}
-        )
-        
-        # Коллекция для знаний
-        self.knowledge_collection = self.client.get_or_create_collection(
-            name="knowledge",
-            metadata={"description": "База знаний агента"}
-        )
-        
-        # Коллекция для опыта
-        self.experience_collection = self.client.get_or_create_collection(
-            name="experience",
-            metadata={"description": "Опыт взаимодействий"}
-        )
-        
-        logger.info("🧠 Векторная память инициализирована")
+        # Инициализация ChromaDB - НОВАЯ ВЕРСИЯ
+        try:
+            # Используем PersistentClient вместо устаревшего Client
+            self.client = chromadb.PersistentClient(
+                path=persist_directory
+            )
+            
+            # Коллекция для общих воспоминаний
+            self.memories_collection = self.client.get_or_create_collection(
+                name="memories",
+                metadata={"description": "Долговременная память агента", "hnsw:space": "cosine"}
+            )
+            
+            # Коллекция для знаний
+            self.knowledge_collection = self.client.get_or_create_collection(
+                name="knowledge",
+                metadata={"description": "База знаний агента", "hnsw:space": "cosine"}
+            )
+            
+            # Коллекция для опыта
+            self.experience_collection = self.client.get_or_create_collection(
+                name="experience",
+                metadata={"description": "Опыт взаимодействий", "hnsw:space": "cosine"}
+            )
+            
+            logger.info("🧠 Векторная память инициализирована (PersistentClient)")
+            
+        except Exception as e:
+            logger.error(f"❌ Ошибка инициализации ChromaDB: {e}")
+            raise
         
     def store_memory(self, content: str, metadata: Dict[str, Any] = None, 
                     embedding: Optional[List[float]] = None) -> str:
@@ -138,17 +145,16 @@ class VectorMemory:
         try:
             results = self.memories_collection.query(
                 query_texts=[query],
-                n_results=limit,
-                where={"type": "memory"}
+                n_results=limit
             )
             
             memories = []
-            for i, doc in enumerate(results['documents'][0]):
-                if results['distances'][0][i] <= threshold:
+            if results['documents'] and results['documents'][0]:
+                for i, doc in enumerate(results['documents'][0]):
                     memories.append({
                         "content": doc,
-                        "metadata": results['metadatas'][0][i],
-                        "distance": results['distances'][0][i],
+                        "metadata": results['metadatas'][0][i] if results['metadatas'] else {},
+                        "distance": results['distances'][0][i] if results['distances'] else 0,
                         "id": results['ids'][0][i]
                     })
                     
@@ -173,13 +179,14 @@ class VectorMemory:
             )
             
             knowledge_items = []
-            for i, doc in enumerate(results['documents'][0]):
-                knowledge_items.append({
-                    "content": doc,
-                    "metadata": results['metadatas'][0][i],
-                    "distance": results['distances'][0][i],
-                    "id": results['ids'][0][i]
-                })
+            if results['documents'] and results['documents'][0]:
+                for i, doc in enumerate(results['documents'][0]):
+                    knowledge_items.append({
+                        "content": doc,
+                        "metadata": results['metadatas'][0][i] if results['metadatas'] else {},
+                        "distance": results['distances'][0][i] if results['distances'] else 0,
+                        "id": results['ids'][0][i]
+                    })
                 
             return knowledge_items
             
@@ -196,22 +203,22 @@ class VectorMemory:
             
             results = self.experience_collection.query(
                 query_texts=[query_text],
-                n_results=limit,
-                where={"type": "experience"}
+                n_results=limit
             )
             
             experiences = []
-            for i, doc in enumerate(results['documents'][0]):
-                try:
-                    experience_data = json.loads(doc)
-                    experiences.append({
-                        "data": experience_data,
-                        "metadata": results['metadatas'][0][i],
-                        "similarity": 1 - results['distances'][0][i],
-                        "id": results['ids'][0][i]
-                    })
-                except json.JSONDecodeError:
-                    continue
+            if results['documents'] and results['documents'][0]:
+                for i, doc in enumerate(results['documents'][0]):
+                    try:
+                        experience_data = json.loads(doc)
+                        experiences.append({
+                            "data": experience_data,
+                            "metadata": results['metadatas'][0][i] if results['metadatas'] else {},
+                            "similarity": 1 - (results['distances'][0][i] if results['distances'] else 0),
+                            "id": results['ids'][0][i]
+                        })
+                    except json.JSONDecodeError:
+                        continue
                     
             return experiences
             
@@ -268,11 +275,14 @@ class VectorMemory:
             experience_count = self.experience_collection.count()
             
             # Получение примеров категорий знаний
-            knowledge_samples = self.knowledge_collection.get(limit=5)
             categories = set()
-            for meta in knowledge_samples['metadatas']:
-                if meta and 'category' in meta:
-                    categories.add(meta['category'])
+            try:
+                knowledge_samples = self.knowledge_collection.get(limit=5)
+                for meta in knowledge_samples['metadatas']:
+                    if meta and 'category' in meta:
+                        categories.add(meta['category'])
+            except:
+                pass
                     
             return {
                 "total_memories": memory_count,
@@ -289,8 +299,6 @@ class VectorMemory:
             
     def _estimate_memory_size(self) -> str:
         """Оценка размера памяти"""
-        import os
-        
         total_size = 0
         if os.path.exists(self.persist_directory):
             for dirpath, dirnames, filenames in os.walk(self.persist_directory):
@@ -311,7 +319,6 @@ class VectorMemory:
         backup_file = f"{self.persist_directory}/backup_timestamp.txt"
         
         try:
-            import os
             if os.path.exists(backup_file):
                 with open(backup_file, 'r') as f:
                     return f.read().strip()
@@ -322,14 +329,14 @@ class VectorMemory:
         
     def create_backup(self, backup_path: str = None):
         """Создание резервной копии памяти"""
-        import shutil
-        import os
-        
         if backup_path is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             backup_path = f"./data/backups/memory_backup_{timestamp}"
             
         try:
+            # Создание директории для бэкапа
+            os.makedirs(os.path.dirname(backup_path), exist_ok=True)
+            
             # Копирование директории
             shutil.copytree(self.persist_directory, backup_path)
             
@@ -346,6 +353,7 @@ class VectorMemory:
                 json.dump(backup_meta, f, ensure_ascii=False, indent=2)
                 
             # Обновление времени последнего бэкапа
+            os.makedirs(self.persist_directory, exist_ok=True)
             timestamp_file = f"{self.persist_directory}/backup_timestamp.txt"
             with open(timestamp_file, 'w') as f:
                 f.write(datetime.now().isoformat())
@@ -359,9 +367,6 @@ class VectorMemory:
             
     def restore_from_backup(self, backup_path: str):
         """Восстановление памяти из резервной копии"""
-        import shutil
-        import os
-        
         try:
             # Проверка существования бэкапа
             if not os.path.exists(backup_path):
@@ -375,14 +380,11 @@ class VectorMemory:
             # Копирование бэкапа
             shutil.copytree(backup_path, self.persist_directory)
             
-            # Переинициализация клиента
-            self.client.persist()
-            
             logger.info(f"✅ Память восстановлена из бэкапа: {backup_path}")
             
             # Удаление временной копии после успешного восстановления
             import time
-            time.sleep(2)
+            time.sleep(1)
             if os.path.exists(temp_backup):
                 shutil.rmtree(temp_backup)
                 
@@ -404,8 +406,7 @@ class VectorMemory:
             
             # Получение старых воспоминаний
             old_memories = self.memories_collection.get(
-                where={"timestamp": {"$lt": cutoff_date}},
-                include=["metadatas", "ids"]
+                where={"timestamp": {"$lt": cutoff_date}}
             )
             
             if old_memories['ids']:
@@ -437,10 +438,12 @@ class VectorMemory:
                 export_data["memories"].append({
                     "id": memory_id,
                     "content": all_memories['documents'][i],
-                    "metadata": all_memories['metadatas'][i]
+                    "metadata": all_memories['metadatas'][i] if all_memories['metadatas'] else {}
                 })
                 
             # Сохранение в указанном формате
+            os.makedirs(os.path.dirname(export_path), exist_ok=True)
+            
             if format.lower() == "json":
                 with open(f"{export_path}.json", 'w', encoding='utf-8') as f:
                     json.dump(export_data, f, ensure_ascii=False, indent=2)

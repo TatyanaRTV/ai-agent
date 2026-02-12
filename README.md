@@ -48,19 +48,23 @@
 - 8GB RAM (рекомендуется 16GB)
 - 50GB свободного места
 
-### Установка за 5 минут
+### Установка и запуск
 
 ```bash
 # 1. Клонировать репозиторий
 git clone https://github.com/ваш-репозиторий/ai-agent.git
 cd ai-agent
 
-# 2. Запустить установку
-chmod +x scripts/install.sh
-./scripts/install.sh
+# 2. Создать и активировать виртуальное окружение
+python3 -m venv .venv
+source .venv/bin/activate
 
-# 3. Настроить конфигурацию
+# 3. Установить зависимости
+pip install -r requirements.txt
+
+# 4. Настроить конфигурацию
+cp config.example.yaml configs/main.yaml
 nano configs/main.yaml
 
-# 4. Запустить агента
-./scripts/run.sh
+# 5. Запустить агента
+python start_elena.py

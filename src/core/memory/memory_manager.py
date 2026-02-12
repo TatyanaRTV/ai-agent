@@ -3,8 +3,11 @@
 """
 
 import logging
+import uuid
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
+
+from src.core.memory.vector_memory import VectorMemory
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +19,7 @@ class MemoryManager:
         self.short_term_memory = {}
         self.long_term_memory = VectorMemory()
         self.context_buffer = []
+        self.last_learning_time = datetime.now()
         self.memory_stats = {
             "short_term_entries": 0,
             "long_term_entries": 0,
@@ -29,7 +33,6 @@ class MemoryManager:
         if metadata is None:
             metadata = {}
             
-        # Добавление метаданных
         metadata.update({
             "timestamp": datetime.now().isoformat(),
             "memory_type": memory_type,
@@ -52,7 +55,7 @@ class MemoryManager:
             return memory_id
             
         except Exception as e:
-            logger.error(f"Ошибка сохранения в память: {e}")
+            logger.error(f"❌ Ошибка сохранения в память: {e}")
             raise
             
     async def retrieve(self, memory_type: str, query: str = None, limit: int = 10) -> List[Dict[str, Any]]:
@@ -73,20 +76,18 @@ class MemoryManager:
             return results
             
         except Exception as e:
-            logger.error(f"Ошибка извлечения из памяти: {e}")
+            logger.error(f"❌ Ошибка извлечения из памяти: {e}")
             return []
             
     async def update(self, memory_id: str, content: Dict[str, Any], metadata: Dict[str, Any] = None):
         """Обновление информации в памяти"""
         logger.info(f"🔄 Обновление памяти ID: {memory_id}")
         
-        # Определение типа памяти по ID или другим признакам
-        # В данной упрощенной версии обновляем только в долговременной памяти
         try:
             await self.long_term_memory.update_memory(memory_id, content, metadata)
             logger.info(f"✅ Память обновлена: {memory_id}")
         except Exception as e:
-            logger.error(f"Ошибка обновления памяти: {e}")
+            logger.error(f"❌ Ошибка обновления памяти: {e}")
             raise
             
     async def forget(self, memory_id: str, memory_type: str = None):
@@ -102,7 +103,7 @@ class MemoryManager:
             logger.info(f"✅ Память удалена: {memory_id}")
             
         except Exception as e:
-            logger.error(f"Ошибка удаления памяти: {e}")
+            logger.error(f"❌ Ошибка удаления памяти: {e}")
             raise
             
     async def consolidate(self):
@@ -112,21 +113,26 @@ class MemoryManager:
         consolidated_count = 0
         
         for memory_id, memory in list(self.short_term_memory.items()):
-            # Проверка на важность и возраст
             if self._should_consolidate(memory):
                 try:
-                    # Перенос в долговременную память
+                    content = memory.get("content", {})
+                    metadata = memory.get("metadata", {})
+                    
+                    if isinstance(content, dict):
+                        content_str = str(content)
+                    else:
+                        content_str = str(content)
+                        
                     await self.long_term_memory.store_memory(
-                        content=memory["content"],
-                        metadata=memory["metadata"]
+                        content=content_str,
+                        metadata=metadata
                     )
                     
-                    # Удаление из кратковременной
                     self.short_term_memory.pop(memory_id)
                     consolidated_count += 1
                     
                 except Exception as e:
-                    logger.error(f"Ошибка консолидации памяти {memory_id}: {e}")
+                    logger.error(f"❌ Ошибка консолидации памяти {memory_id}: {e}")
                     
         logger.info(f"✅ Консолидировано записей: {consolidated_count}")
         
@@ -134,39 +140,151 @@ class MemoryManager:
         """Очистка старой памяти"""
         logger.info(f"🧹 Очистка памяти старше {older_than_days} дней")
         
-        # Очистка кратковременной памяти
         cutoff_date = datetime.now() - timedelta(days=older_than_days)
         
         to_delete = []
         for memory_id, memory in self.short_term_memory.items():
-            timestamp = datetime.fromisoformat(memory["metadata"].get("timestamp", "2000-01-01"))
-            if timestamp < cutoff_date:
-                to_delete.append(memory_id)
+            try:
+                timestamp_str = memory.get("metadata", {}).get("timestamp", "2000-01-01")
+                timestamp = datetime.fromisoformat(timestamp_str)
+                if timestamp < cutoff_date:
+                    to_delete.append(memory_id)
+            except:
+                continue
                 
         for memory_id in to_delete:
             self.short_term_memory.pop(memory_id, None)
             
-        # Очистка долговременной памяти
         await self.long_term_memory.cleanup_old_memories(older_than_days)
         
         logger.info(f"✅ Очищено записей кратковременной памяти: {len(to_delete)}")
         
+    def store_interaction(self, user_input: str, agent_response: str, metadata: Dict[str, Any] = None) -> str:
+        """Сохранение взаимодействия в память (синхронная обёртка)"""
+        import asyncio
+        
+        content = {
+            "user": user_input,
+            "agent": agent_response,
+            "type": "interaction"
+        }
+        
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+        return loop.run_until_complete(
+            self.store("short_term", content, metadata)
+        )
+        
+    def get_recent_interactions(self, limit: int = 5) -> List[Dict[str, Any]]:
+        """Получение последних взаимодействий"""
+        results = []
+        for memory_id, memory in list(self.short_term_memory.items())[-limit:]:
+            content = memory.get("content", {})
+            if isinstance(content, dict) and content.get("type") == "interaction":
+                results.append({
+                    "id": memory_id,
+                    "user": content.get("user", ""),
+                    "agent": content.get("agent", ""),
+                    "timestamp": memory.get("metadata", {}).get("timestamp"),
+                    "metadata": memory.get("metadata", {})
+                })
+        return results
+        
+    def get_conversation_context(self, limit: int = 10) -> str:
+        """Получение контекста разговора"""
+        interactions = self.get_recent_interactions(limit)
+        context_lines = []
+        for i in interactions:
+            context_lines.append(f"User: {i.get('user', '')}")
+            context_lines.append(f"Agent: {i.get('agent', '')}")
+        return "\n".join(context_lines)
+        
+    def get_last_learning_time(self) -> datetime:
+        """Получение времени последнего обучения"""
+        return self.last_learning_time
+        
+    def update_learning_time(self):
+        """Обновление времени обучения"""
+        self.last_learning_time = datetime.now()
+        
+    async def find_similar_interactions(self, context: Dict[str, Any], limit: int = 5) -> List[Dict[str, Any]]:
+        """Поиск похожих взаимодействий"""
+        query = context.get('text', '')
+        if not query:
+            return []
+            
+        try:
+            results = await self.long_term_memory.search_memories(query, limit)
+            
+            interactions = []
+            for r in results:
+                interactions.append({
+                    "text": r.get("content", ""),
+                    "timestamp": r.get("metadata", {}).get("timestamp", ""),
+                    "similarity": 1 - r.get("distance", 0)
+                })
+            return interactions
+            
+        except Exception as e:
+            logger.error(f"❌ Ошибка поиска похожих взаимодействий: {e}")
+            return []
+            
+    def store_reflection(self, reflection: Dict[str, Any]):
+        """Сохранение саморефлексии"""
+        import asyncio
+        import json
+        
+        try:
+            content_str = json.dumps(reflection, ensure_ascii=False)
+            metadata = {
+                "type": "reflection",
+                "timestamp": datetime.now().isoformat(),
+                "effectiveness": reflection.get("effectiveness", 0)
+            }
+            
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                
+            loop.run_until_complete(
+                self.long_term_memory.store_memory(content_str, metadata)
+            )
+            
+        except Exception as e:
+            logger.error(f"❌ Ошибка сохранения рефлексии: {e}")
+            
+    async def search_memories(self, query: str, limit: int = 10, threshold: float = 0.3) -> List[Dict[str, Any]]:
+        """Поиск воспоминаний (асинхронный)"""
+        try:
+            return await self.long_term_memory.search_memories(query, limit, threshold)
+        except Exception as e:
+            logger.error(f"❌ Ошибка поиска воспоминаний: {e}")
+            return []
+            
     def get_stats(self) -> Dict[str, Any]:
         """Получение статистики памяти"""
         self.memory_stats["short_term_entries"] = len(self.short_term_memory)
         self.memory_stats["context_size"] = len(self.context_buffer)
         
-        # Получение статистики долговременной памяти
-        lt_stats = self.long_term_memory.get_memory_stats()
-        self.memory_stats["long_term_entries"] = lt_stats.get("total_memories", 0)
-        self.memory_stats.update(lt_stats)
+        try:
+            lt_stats = self.long_term_memory.get_memory_stats()
+            self.memory_stats["long_term_entries"] = lt_stats.get("total_memories", 0)
+            self.memory_stats.update(lt_stats)
+        except Exception as e:
+            logger.error(f"❌ Ошибка получения статистики долговременной памяти: {e}")
+            
+        self.memory_stats["last_learning"] = self.last_learning_time.isoformat()
         
         return self.memory_stats
         
     async def _store_short_term(self, content: Dict[str, Any], metadata: Dict[str, Any]) -> str:
         """Сохранение в кратковременную память"""
-        import uuid
-        
         memory_id = str(uuid.uuid4())
         
         self.short_term_memory[memory_id] = {
@@ -175,16 +293,20 @@ class MemoryManager:
             "last_accessed": datetime.now().isoformat()
         }
         
+        if len(self.short_term_memory) > 1000:
+            oldest_keys = list(self.short_term_memory.keys())[:500]
+            for key in oldest_keys:
+                self.short_term_memory.pop(key, None)
+        
         return memory_id
         
     async def _store_long_term(self, content: Dict[str, Any], metadata: Dict[str, Any]) -> str:
         """Сохранение в долговременную память"""
-        return await self.long_term_memory.store_memory(content, metadata)
+        content_str = str(content) if not isinstance(content, str) else content
+        return await self.long_term_memory.store_memory(content_str, metadata)
         
     async def _store_context(self, content: Dict[str, Any], metadata: Dict[str, Any]) -> str:
         """Сохранение в контекстный буфер"""
-        import uuid
-        
         memory_id = str(uuid.uuid4())
         
         context_entry = {
@@ -196,7 +318,6 @@ class MemoryManager:
         
         self.context_buffer.append(context_entry)
         
-        # Ограничение размера буфера
         max_context_size = self.config.get("max_context_size", 20)
         if len(self.context_buffer) > max_context_size:
             self.context_buffer = self.context_buffer[-max_context_size:]
@@ -213,7 +334,7 @@ class MemoryManager:
                     "id": memory_id,
                     "content": memory["content"],
                     "metadata": memory["metadata"],
-                    "score": 1.0  # В кратковременной памяти нет релевантности
+                    "score": 1.0
                 })
                 
                 if len(results) >= limit:
@@ -226,14 +347,13 @@ class MemoryManager:
         if query:
             return await self.long_term_memory.search_memories(query, limit)
         else:
-            # Возврат последних записей
-            return await self.long_term_memory.get_recent_memories(limit)
+            return []
             
     async def _retrieve_context(self, query: str = None, limit: int = 10) -> List[Dict[str, Any]]:
         """Извлечение из контекстного буфера"""
         results = []
         
-        for entry in reversed(self.context_buffer):  # Начиная с самых новых
+        for entry in reversed(self.context_buffer):
             if self._matches_query(entry, query):
                 results.append({
                     "id": entry["id"],
@@ -249,17 +369,17 @@ class MemoryManager:
         
     def _should_consolidate(self, memory: Dict[str, Any]) -> bool:
         """Определение, нужно ли переносить запись в долговременную память"""
-        metadata = memory["metadata"]
+        metadata = memory.get("metadata", {})
         
-        # Проверка возраста
-        timestamp = datetime.fromisoformat(metadata.get("timestamp", "2000-01-01"))
-        age_hours = (datetime.now() - timestamp).total_seconds() / 3600
-        
-        # Проверка важности
+        try:
+            timestamp = datetime.fromisoformat(metadata.get("timestamp", "2000-01-01"))
+            age_hours = (datetime.now() - timestamp).total_seconds() / 3600
+        except:
+            age_hours = 0
+            
         importance = metadata.get("importance", 0)
         access_count = metadata.get("access_count", 0)
         
-        # Эвристика для консолидации
         if importance > 0.7:
             return True
         elif access_count > 5:
@@ -274,14 +394,13 @@ class MemoryManager:
         if not query:
             return True
             
-        # Поиск в содержимом
+        query_lower = query.lower()
         content_str = str(memory.get("content", "")).lower()
-        if query.lower() in content_str:
+        if query_lower in content_str:
             return True
             
-        # Поиск в метаданных
         metadata_str = str(memory.get("metadata", {})).lower()
-        if query.lower() in metadata_str:
+        if query_lower in metadata_str:
             return True
             
         return False

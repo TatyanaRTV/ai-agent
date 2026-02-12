@@ -1,14 +1,31 @@
+# Конфигурация обучения и самообучения
+
 learning:
   self_improvement:
     enabled: true
-    analysis_interval: 3600  # секунды
+    analysis_interval: 3600  # секунды (1 час)
     auto_improve: true
   
   training:
-    model_dir: "/mnt/ai_data/models"
-    checkpoint_dir: "/mnt/ai_data/checkpoints"
+    # Используем относительные пути внутри проекта
+    model_dir: "./models"  # ИСПРАВЛЕНО: было /mnt/ai_data/models
+    checkpoint_dir: "./checkpoints"  # ИСПРАВЛЕНО: было /mnt/ai_data/checkpoints
     use_gpu: true
   
   feedback:
     save_feedback: true
     learn_from_feedback: true
+  
+  # Дополнительные параметры
+  optimization:
+    batch_size: 32
+    learning_rate: 0.01
+    epochs: 10
+    validation_split: 0.2
+  
+  # Сохранение моделей
+  save:
+    enabled: true
+    format: "pytorch"
+    keep_best: 3
+    interval_steps: 1000

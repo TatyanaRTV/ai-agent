@@ -171,3 +171,13 @@ class ElenaLogger:
             "last_modified": datetime.fromtimestamp(log_file.stat().st_mtime).isoformat(),
             "file_size": log_file.stat().st_size
         }
+
+# ============================================
+# ФУНКЦИЯ ДЛЯ ОБРАТНОЙ СОВМЕСТИМОСТИ С main.py
+# ============================================
+
+def setup_logging(name: str = "elena", level: str = "INFO") -> ElenaLogger:
+    """Настройка логирования"""
+    return ElenaLogger(name)
+
+__all__ = ['ElenaLogger', 'setup_logging']

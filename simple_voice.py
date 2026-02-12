@@ -3,8 +3,8 @@
 Говорит и слушает (если есть микрофон)
 """
 
-import pyttsx3
 import speech_recognition as sr
+import os
 import time
 
 class SimpleVoice:
@@ -13,30 +13,21 @@ class SimpleVoice:
     def __init__(self):
         print("🎤 Инициализирую голосовой модуль...")
         
-        # Инициализация синтезатора речи
+        # Инициализация синтезатора речи (RHVoice Елена)
         try:
-            self.engine = pyttsx3.init()
+            # Проверяем наличие RHVoice
+            result = os.system("which RHVoice-test > /dev/null 2>&1")
+            self.rhvoice_available = (result == 0)
             
-            # Настройка голоса
-            voices = self.engine.getProperty('voices')
-            
-            # Ищем русский женский голос
-            for voice in voices:
-                if 'russian' in voice.languages or 'ru' in str(voice.languages):
-                    if 'female' in voice.name.lower() or 'женск' in voice.name.lower():
-                        self.engine.setProperty('voice', voice.id)
-                        print(f"✅ Найден голос: {voice.name}")
-                        break
-            
-            # Настройки
-            self.engine.setProperty('rate', 150)  # Скорость
-            self.engine.setProperty('volume', 0.9) # Громкость
-            
-            print("✅ Синтезатор речи готов!")
-            
+            if self.rhvoice_available:
+                print("✅ RHVoice Елена найден!")
+            else:
+                print("⚠️ RHVoice не найден, голосовая озвучка недоступна")
+                self.rhvoice_available = False
+                
         except Exception as e:
-            print(f"⚠️ Не удалось инициализировать синтезатор: {e}")
-            self.engine = None
+            print(f"⚠️ Ошибка инициализации голоса: {e}")
+            self.rhvoice_available = False
         
         # Инициализация распознавания речи
         try:
@@ -47,11 +38,15 @@ class SimpleVoice:
             self.recognizer = None
     
     def speak(self, text):
-        """Произнести текст"""
-        if self.engine:
-            print(f"🎤 Говорю: {text}")
-            self.engine.say(text)
-            self.engine.runAndWait()
+        """Произнести текст голосом Елены"""
+        if self.rhvoice_available:
+            try:
+                print(f"🔊 Елена: {text}")
+                os.system(f'echo "{text}" | RHVoice-test -p elena -r 85 -o out.wav && aplay -q out.wav')
+                os.system("rm -f out.wav")  # Удаляем временный файл
+            except Exception as e:
+                print(f"❌ Ошибка озвучки: {e}")
+                print(f"💬: {text}")
         else:
             print(f"💬 (Без голоса): {text}")
     
@@ -87,8 +82,8 @@ class SimpleVoice:
             return None
     
     def test_voice(self):
-        """Тест голоса"""
-        print("\n🔊 ТЕСТ ГОЛОСА")
+        """Тест голоса Елены"""
+        print("\n🔊 ТЕСТ ГОЛОСА ЕЛЕНЫ")
         print("=" * 30)
         
         test_phrases = [

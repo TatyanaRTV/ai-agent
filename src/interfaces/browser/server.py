@@ -9,14 +9,18 @@ from fastapi.templating import Jinja2Templates
 import uvicorn
 import json
 import asyncio
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from pathlib import Path
 import sys
 
 # Добавляем путь к проекту
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from src.core.brain.agent import ElenaAgent
+# ЛЕНИВЫЙ ИМПОРТ — агент загружается только когда нужен
+def get_agent_class():
+    from src.core.brain.agent import ElenaAgent
+    return ElenaAgent
+
 from src.utils.logging.logger import ElenaLogger
 
 class WebInterface:
@@ -27,7 +31,7 @@ class WebInterface:
         self.port = port
         self.app = FastAPI(title="Елена AI Assistant")
         self.logger = ElenaLogger("web_interface")
-        self.agent = None
+        self.agent: Optional[Any] = None
         self.active_connections = []
         
         # Настройка статических файлов и шаблонов
@@ -100,16 +104,13 @@ class WebInterface:
                         user_message = data.get("message", "")
                         
                         if user_message:
-                            # Логируем сообщение
                             self.logger.info(f"WebSocket message: {user_message}")
                             
-                            # Обрабатываем сообщение
                             if self.agent:
                                 response = await self.agent.process_query(user_message)
                             else:
                                 response = f"Елена: '{user_message}'"
                                 
-                            # Отправляем ответ
                             await websocket.send_json({
                                 "type": "response",
                                 "message": response,
@@ -150,9 +151,9 @@ class WebInterface:
         status_info = {
             "agent": "Елена",
             "status": "active" if self.agent else "inactive",
-            "memory_usage": "0MB",  # Здесь должна быть реальная статистика
+            "memory_usage": "0MB",
             "connected_clients": len(self.active_connections),
-            "uptime": "0 seconds"  # Здесь должно быть реальное время работы
+            "uptime": "0 seconds"
         }
         
         await websocket.send_json({
@@ -194,7 +195,8 @@ class WebInterface:
     def initialize_agent(self):
         """Инициализация ИИ-агента"""
         try:
-            self.agent = ElenaAgent()
+            AgentClass = get_agent_class()
+            self.agent = AgentClass()
             self.logger.info("ИИ-агент инициализирован")
         except Exception as e:
             self.logger.error(f"Failed to initialize agent: {e}")
@@ -204,10 +206,8 @@ class WebInterface:
         """Запуск веб-сервера"""
         self.logger.info(f"Starting web server on {self.host}:{self.port}")
         
-        # Инициализация агента
         self.initialize_agent()
         
-        # Запуск сервера
         config = uvicorn.Config(
             self.app,
             host=self.host,
@@ -220,12 +220,8 @@ class WebInterface:
         
     def run_sync(self):
         """Синхронный запуск"""
-        self.logger.info(f"Starting web server on {self.host}:{self.port}")
-        
-        # Инициализация агента
-        self.initialize_agent()
-        
-        uvicorn.run(self.app, host=self.host, port=self.port)
+        import asyncio
+        asyncio.run(self.run())
 
 if __name__ == "__main__":
     import argparse

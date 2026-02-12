@@ -1,6 +1,40 @@
+# Конфигурация распознавания речи (STT)
+
+# Основной движок
 stt:
-  default_engine: "vosk"
+  # Движок по умолчанию
+  default_engine: "whisper"  # whisper, vosk, google
+  
+  # Язык распознавания
   language: "ru"
-  vosk_model_path: "/mnt/ai_data/models/vosk/ru"
-  whisper_model_size: "base"
+  
+  # Настройки Vosk (запасной вариант)
+  # Используем относительный путь внутри проекта
+  vosk_model_path: "./models/vosk/ru"  # ИСПРАВЛЕНО: было /mnt/ai_data/models/vosk/ru
+  
+  # Настройки Whisper (основной)
+  whisper_model_size: "base"  # tiny, base, small, medium, large
   use_gpu: true
+  
+  # Дополнительные параметры Whisper
+  device: "auto"        # cpu, cuda, auto
+  compute_type: "float16"
+  cpu_threads: 4
+  beam_size: 5
+  best_of: 5
+  temperature: 0.0
+  compression_ratio_threshold: 2.4
+  logprob_threshold: -1.0
+  no_speech_threshold: 0.6
+  condition_on_previous_text: true
+  
+  # Кэширование результатов
+  cache_enabled: true
+  cache_ttl_hours: 24
+  cache_directory: "./data/cache/stt"  # Добавлено
+  
+  # Отладка
+  debug:
+    save_audio: false
+    save_transcripts: false
+    log_timings: false

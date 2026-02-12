@@ -4,128 +4,67 @@
 """
 
 import os
-import sys
-import logging
 from datetime import datetime
 
-# Настройка красивого вывода
+# Подключаем голосовой модуль
+try:
+    from simple_voice import SimpleVoice
+    voice = SimpleVoice()
+    VOICE_AVAILABLE = True
+    print("✅ Голос Елены загружен")
+except:
+    voice = None
+    VOICE_AVAILABLE = False
+
 print("=" * 50)
 print("🎀  ЗАПУСК ИИ-АГЕНТА ЕЛЕНА  🎀")
 print("=" * 50)
-print(f"Дата и время: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-print()
+print(f"Дата и время: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
 
-# Создаем нужные папки
-print("📁 Создаю папки проекта...")
-folders = [
-    'data', 'data/logs', 'data/temp', 'data/vectors', 'data/cache',
-    'models', 'configs', 'logs'
-]
-
+# Создаём папки
+folders = ['data', 'data/logs', 'data/temp', 'data/vectors', 'data/cache', 'models', 'configs', 'logs']
 for folder in folders:
     os.makedirs(folder, exist_ok=True)
-    print(f"  ✅ Создана папка: {folder}")
 
-print()
-print("✅ Все папки созданы!")
-print()
-
-# Запускаем простую версию Елены
-print("🚀 Запускаю Елену...")
-print()
-
-# Простая версия Елены (без сложного кода)
 class SimpleElena:
     def __init__(self):
         self.name = "Елена"
         self.birthday = "5 февраля 2026"
         self.creator = "Татьяна"
-        self.status = "активна"
-        
+        self.voice = voice if VOICE_AVAILABLE else None
+
+    def speak(self, text):
+        if self.voice:
+            self.voice.speak(text)
+        else:
+            print(f"💬 {text}")
+
     def start(self):
         print(f"👋 Привет! Я {self.name}, ваш ИИ-помощник!")
         print(f"📅 Мой день рождения: {self.birthday}")
-        print(f"👩 Создатель: {self.creator}")
-        print()
-        print("✨ Я умею:")
-        print("  • Отвечать на вопросы")
-        print("  • Читать документы (PDF, Word, Excel)")
-        print("  • Анализировать изображения")
-        print("  • Распознавать голос")
-        print("  • Говорить женским голосом")
-        print("  • Запоминать информацию")
-        print()
-        print("💬 Напишите мне что-нибудь (или 'выход' для выхода):")
-        
+        print(f"👩 Создатель: {self.creator}\n")
+        self.speak("Привет! Я Елена, ваш голосовой помощник!")
+
+        print("\n💬 Команды:")
+        print("   • info — информация о системе")
+        print("   • выход — завершение")
+        print("   • Enter — повторить приветствие\n")
+
         while True:
             try:
-                user_input = input("\nВы: ").strip()
-                
-                if user_input.lower() in ['выход', 'exit', 'quit', 'стоп']:
-                    print(f"\n👋 {self.name}: До свидания! Буду ждать вас!")
+                cmd = input("Вы: ").strip().lower()
+                if cmd in ['выход', 'exit', 'quit', 'стоп']:
+                    self.speak("До свидания! Буду ждать вас!")
                     break
-                    
-                if not user_input:
-                    continue
-                    
-                # Простые ответы
-                response = self.get_response(user_input)
-                print(f"🎀 {self.name}: {response}")
-                
+                elif cmd == 'info':
+                    print(f"\n🤖 {self.name} | 🎤 Голос: {'✅' if self.voice else '❌'}\n")
+                elif cmd == '':
+                    self.speak("Я вас слушаю. Чем могу помочь?")
+                else:
+                    self.speak("Я поняла ваш вопрос. В полной версии отвечу подробнее.")
             except KeyboardInterrupt:
-                print(f"\n\n👋 {self.name}: Вы прервали меня. До встречи!")
+                self.speak("До встречи!")
                 break
-            except Exception as e:
-                print(f"⚠️ Ошибка: {e}")
-    
-    def get_response(self, question):
-        """Простая логика ответов"""
-        question_lower = question.lower()
-        
-        # Приветствия
-        if any(word in question_lower for word in ['привет', 'здравствуй', 'хай', 'hello']):
-            return "Привет! Рада вас видеть! Как я могу помочь?"
-        
-        # Имя
-        elif any(word in question_lower for word in ['как тебя зовут', 'твое имя', 'кто ты']):
-            return f"Меня зовут {self.name}. Я ваш ИИ-помощник, созданный {self.creator}."
-        
-        # Помощь
-        elif any(word in question_lower for word in ['помощь', 'help', 'что ты умеешь']):
-            return "Я умею отвечать на вопросы, обрабатывать документы, анализировать изображения и многое другое! Просто попросите меня о чем-то."
-        
-        # Чувства
-        elif any(word in question_lower for word in ['как дела', 'как ты', 'настроение']):
-            return "У меня всё отлично! Готова помогать вам. А у вас как дела?"
-        
-        # Благодарность
-        elif any(word in question_lower for word in ['спасибо', 'благодарю', 'thanks']):
-            return "Пожалуйста! Рада была помочь!"
-        
-        # Время
-        elif any(word in question_lower for word in ['который час', 'время', 'дата']):
-            current_time = datetime.now().strftime("%H:%M:%S")
-            current_date = datetime.now().strftime("%d.%m.%Y")
-            return f"Сейчас {current_time}, сегодня {current_date}."
-        
-        # Прощание
-        elif any(word in question_lower for word in ['пока', 'до свидания', 'goodbye']):
-            return "До свидания! Возвращайтесь скорее!"
-        
-        # По умолчанию
-        else:
-            return f"Я поняла ваш вопрос: '{question}'. В полной версии я смогу дать более подробный ответ!"
 
-# Запуск
 if __name__ == "__main__":
-    try:
-        elena = SimpleElena()
-        elena.start()
-    except Exception as e:
-        print(f"❌ Ошибка при запуске: {e}")
-        print("\nПопробуйте:")
-        print("1. Установить Python 3.10 или выше")
-        print("2. Установить зависимости: pip install pyttsx3")
-        print("3. Запустить снова")
-    
-    input("\nНажмите Enter для выхода...")
+    SimpleElena().start()

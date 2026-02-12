@@ -16,6 +16,7 @@ class WebViews:
         context = context or {}
         context.setdefault("title", "Елена AI Assistant")
         context.setdefault("version", "1.0.0")
+        context.setdefault("greeting", "Привет! Я Елена, ваш ИИ-помощник. Чем могу помочь?")
         
         return f"""
         <!DOCTYPE html>
@@ -159,7 +160,7 @@ class WebViews:
                 
                 <div class="chat-container" id="chatContainer">
                     <div class="message bot-message">
-                        Привет! Я Елена, ваш ИИ-помощник. Чем могу помочь?
+                        {context['greeting']}
                     </div>
                 </div>
                 

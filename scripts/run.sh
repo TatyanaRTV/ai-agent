@@ -18,7 +18,7 @@ NC='\033[0m'
 # Пути
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-VENV_PATH="$PROJECT_ROOT/venv"
+VENV_PATH="$PROJECT_ROOT/.venv"
 LOG_DIR="$PROJECT_ROOT/logs"
 CONFIG_DIR="$PROJECT_ROOT/configs"
 DATA_DIR="$PROJECT_ROOT/data"
@@ -85,10 +85,17 @@ check_environment() {
         exit 1
     fi
     
-    # Проверка зависимостей
-    if ! python3 -c "import pyttsx3" &> /dev/null; then
-        log_error "Библиотека pyttsx3 не установлена!"
+    # Проверка версии Python (3.11+)
+    if ! python3 -c "import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)"; then
+        log_error "Требуется Python 3.11 или выше!"
         exit 1
+    fi
+    
+    # Проверка голосового модуля
+    if [ -f "$PROJECT_ROOT/simple_voice.py" ]; then
+        log_success "Голосовой модуль найден"
+    else
+        log_warning "Голосовой модуль не найден"
     fi
     
     log_success "Окружение проверено"
@@ -99,17 +106,13 @@ check_configs() {
     
     # Основная конфигурация
     if [ ! -f "$CONFIG_DIR/main.yaml" ]; then
-        log_warning "Основной конфиг не найден, создаю..."
-        cp "$CONFIG_DIR/main.example.yaml" "$CONFIG_DIR/main.yaml" 2>/dev/null || \
-        cat > "$CONFIG_DIR/main.yaml" << 'EOF'
-agent:
-  name: "Елена"
-  version: "1.0.0"
-EOF
+        log_error "Основной конфиг не найден!"
+        echo "Скопируйте config.example.yaml -> configs/main.yaml"
+        exit 1
     fi
     
     # Папки данных
-    mkdir -p "$DATA_DIR"/{logs,temp,cache,vectors,backups}
+    mkdir -p "$DATA_DIR"/{temp,cache,logs,vectors,backups}
     
     log_success "Конфигурация проверена"
 }
@@ -138,7 +141,7 @@ start_resource_monitor() {
         
         echo "CPU: ${CPU}% | RAM: ${MEM}% | DISK: ${DISK}%" > "$DATA_DIR/monitor.txt"
         sleep 5
-    done
+    done 2>/dev/null || true
 }
 
 stop_services() {
@@ -163,27 +166,66 @@ start_agent() {
     export ELENA_HOME="$PROJECT_ROOT"
     export ELENA_CONFIG="$CONFIG_DIR/main.yaml"
     
-    # Запуск основного модуля
+    # Запуск в зависимости от режима
     cd "$PROJECT_ROOT"
     
-    if [ -f "src/main.py" ]; then
-        python3 src/main.py "$@"
-    elif [ -f "start_simple.py" ]; then
-        python3 start_simple.py "$@"
-    else
-        log_error "Файл запуска не найден!"
-        exit 1
-    fi
+    case $MODE in
+        "simple")
+            log_info "Запуск простой версии..."
+            if [ -f "start_elena.py" ]; then
+                python3 start_elena.py "${EXTRA_ARGS[@]}"
+            else
+                log_error "Файл start_elena.py не найден!"
+                exit 1
+            fi
+            ;;
+        "voice")
+            log_info "Запуск голосового режима..."
+            if [ -f "simple_voice.py" ]; then
+                python3 -c "from simple_voice import SimpleVoice; SimpleVoice().test_voice()"
+            else
+                log_error "Голосовой модуль не найден!"
+                exit 1
+            fi
+            ;;
+        "telegram")
+            log_info "Запуск Telegram бота..."
+            if [ -f "src/interfaces/telegram/bot.py" ]; then
+                python3 src/interfaces/telegram/bot.py "${EXTRA_ARGS[@]}"
+            else
+                log_error "Telegram бот не найден!"
+                exit 1
+            fi
+            ;;
+        "web")
+            log_info "Запуск веб-интерфейса..."
+            if [ -f "src/interfaces/browser/server.py" ]; then
+                python3 src/interfaces/browser/server.py "${EXTRA_ARGS[@]}"
+            else
+                log_error "Веб-интерфейс не найден!"
+                exit 1
+            fi
+            ;;
+        "full")
+            log_info "Полный запуск агента..."
+            if [ -f "start_elena.py" ]; then
+                python3 start_elena.py "${EXTRA_ARGS[@]}"
+            else
+                log_error "Файл start_elena.py не найден!"
+                exit 1
+            fi
+            ;;
+    esac
 }
 
 cleanup() {
     log_info "Очистка перед выходом..."
-    
     stop_services
     
     # Очистка временных файлов
     find "$DATA_DIR/temp" -type f -name "*.tmp" -delete 2>/dev/null || true
     find "$DATA_DIR/cache" -type f -mtime +1 -delete 2>/dev/null || true
+    rm -f out.wav 2>/dev/null || true
     
     log_success "Очистка завершена"
 }
@@ -193,7 +235,7 @@ show_help() {
     echo
     echo "Опции:"
     echo "  --simple          Запустить простую версию"
-    echo "  --voice           Только голосовой режим"
+    echo "  --voice           Только голосовой режим (тест)"
     echo "  --telegram        Запустить Telegram бота"
     echo "  --web             Запустить веб-интерфейс"
     echo "  --debug           Режим отладки"
@@ -201,7 +243,7 @@ show_help() {
     echo
     echo "Примеры:"
     echo "  ./scripts/run.sh                # Полный запуск"
-    echo "  ./scripts/run.sh --voice        # Только голос"
+    echo "  ./scripts/run.sh --voice        # Тест голоса"
     echo "  ./scripts/run.sh --debug        # С отладкой"
     echo
 }
@@ -242,16 +284,15 @@ parse_arguments() {
                 ;;
         esac
     done
-    
-    echo "$MODE"
 }
 
+# Основная функция
 main() {
     # Обработка сигналов
     trap cleanup EXIT INT TERM
     
     # Парсинг аргументов
-    MODE=$(parse_arguments "$@")
+    parse_arguments "$@"
     
     # Показ баннера
     show_banner
@@ -265,29 +306,8 @@ main() {
     
     log_success "Режим работы: $MODE"
     
-    # Запуск в зависимости от режима
-    case $MODE in
-        "simple")
-            log_info "Запуск простой версии..."
-            python3 start_simple.py "${EXTRA_ARGS[@]}"
-            ;;
-        "voice")
-            log_info "Запуск голосового режима..."
-            python3 src/interfaces/voice/main.py "${EXTRA_ARGS[@]}"
-            ;;
-        "telegram")
-            log_info "Запуск Telegram бота..."
-            python3 src/interfaces/telegram/bot.py "${EXTRA_ARGS[@]}"
-            ;;
-        "web")
-            log_info "Запуск веб-интерфейса..."
-            python3 src/interfaces/browser/server.py "${EXTRA_ARGS[@]}"
-            ;;
-        "full")
-            log_info "Полный запуск агента..."
-            start_agent "${EXTRA_ARGS[@]}"
-            ;;
-    esac
+    # Запуск агента
+    start_agent
     
     log_success "Работа завершена"
 }

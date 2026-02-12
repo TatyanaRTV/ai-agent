@@ -12,8 +12,8 @@ agent:
 
 # Пути к данным
 paths:
-  home: "/home/ваше_имя/ai-agent"
-  obsidian: "/home/ваше_имя/Obsidian"
+  home: "/mnt/ai_data/ai-agent" 
+  ai_obsidian: "/mnt/ai_data/ai-agent/Ai_Obsidian"  
 
 # Включенные функции
 features:
@@ -25,8 +25,8 @@ features:
 
 # Голосовые настройки
 voice:
-  engine: "pyttsx3"
-  voice_name: "Елена"
+  engine: "rhvoice"
+  voice_name: "elena"
   rate: 150
   volume: 0.9
 
