@@ -1,0 +1,4 @@
+launch.log
+*.log
+КОРНЕВАЯ СТРУКТУРА ПАПОК
+configs/secrets.yaml
