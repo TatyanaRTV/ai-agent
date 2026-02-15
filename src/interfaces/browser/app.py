@@ -16,22 +16,22 @@ import uvicorn
 
 class ConnectionManager:
     """Менеджер WebSocket соединений"""
-    
+
     def __init__(self):
         self.active_connections = []
         self.connection_info = {}
-    
+
     async def connect(self, websocket: WebSocket, client_id: str = None):
         await websocket.accept()
         self.active_connections.append(websocket)
         conn_id = client_id or f"conn_{len(self.active_connections)}"
         self.connection_info[id(websocket)] = {
-            'id': conn_id,
-            'connected_at': datetime.now().isoformat(),
-            'messages_sent': 0
+            "id": conn_id,
+            "connected_at": datetime.now().isoformat(),
+            "messages_sent": 0,
         }
         logger.info(f"🌐 WebSocket подключён: {conn_id}")
-    
+
     def disconnect(self, websocket: WebSocket):
         if websocket in self.active_connections:
             conn_info = self.connection_info.get(id(websocket), {})
@@ -39,15 +39,15 @@ class ConnectionManager:
             if id(websocket) in self.connection_info:
                 del self.connection_info[id(websocket)]
             logger.info(f"🌐 WebSocket отключён: {conn_info.get('id', 'unknown')}")
-    
+
     async def send_message(self, message: str, websocket: WebSocket):
         try:
             await websocket.send_text(message)
             if id(websocket) in self.connection_info:
-                self.connection_info[id(websocket)]['messages_sent'] += 1
+                self.connection_info[id(websocket)]["messages_sent"] += 1
         except Exception as e:
             logger.error(f"❌ Ошибка отправки WebSocket сообщения: {e}")
-    
+
     async def broadcast(self, message: str):
         for connection in self.active_connections:
             try:
@@ -60,11 +60,11 @@ class BrowserApp:
     """
     Веб-интерфейс для Елены - финальная версия
     """
-    
+
     def __init__(self, config, agent):
         """
         Инициализация веб-приложения
-        
+
         Args:
             config: конфигурация
             agent: ссылка на агента Елены
@@ -73,174 +73,154 @@ class BrowserApp:
         self.agent = agent
         self.app = FastAPI(title="Елена - ИИ Ассистент")
         self.manager = ConnectionManager()
-        
+
         # Настройка шаблонов и статики
-        templates_path = Path(__file__).parent / 'templates'
+        templates_path = Path(__file__).parent / "templates"
         self.templates = Jinja2Templates(directory=str(templates_path))
-        
+
         # Регистрация маршрутов
         self._register_routes()
-        
+
         # Статистика
         self.start_time = datetime.now()
         self.request_count = 0
-        
+
         logger.info("🌐 BrowserApp инициализирован")
-    
+
     def _register_routes(self):
         """Регистрация всех маршрутов"""
-        
+
         @self.app.get("/", response_class=HTMLResponse)
         async def get_index(request: Request):
             """Главная страница"""
             self.request_count += 1
             return self.templates.TemplateResponse(
-                "index.html", 
-                {
-                    "request": request,
-                    "agent_name": "Елена",
-                    "version": "1.0.0"
-                }
+                "index.html", {"request": request, "agent_name": "Елена", "version": "1.0.0"}
             )
-        
+
         @self.app.get("/api/status")
         async def get_status():
             """Получение статуса агента"""
             uptime = datetime.now() - self.start_time
             hours, remainder = divmod(uptime.total_seconds(), 3600)
             minutes, seconds = divmod(remainder, 60)
-            
+
             # Получаем информацию о памяти
             memory_usage = {}
-            if hasattr(self.agent, 'memory'):
+            if hasattr(self.agent, "memory"):
                 memory_usage = {
-                    'short_term': len(getattr(self.agent.memory, 'short_term', {})),
-                    'vector_db': 'active' if hasattr(self.agent.memory, 'vector') else 'inactive'
+                    "short_term": len(getattr(self.agent.memory, "short_term", {})),
+                    "vector_db": "active" if hasattr(self.agent.memory, "vector") else "inactive",
                 }
-            
+
             # Список компонентов
-            components = list(self.agent.components.keys()) if hasattr(self.agent, 'components') else []
-            
-            return JSONResponse(content={
-                "status": "active",
-                "agent_name": "Елена",
-                "version": "1.0.0",
-                "uptime": f"{int(hours)}ч {int(minutes)}м {int(seconds)}с",
-                "components": components,
-                "memory_usage": memory_usage,
-                "request_count": self.request_count,
-                "active_connections": len(self.manager.active_connections)
-            })
-        
+            components = list(self.agent.components.keys()) if hasattr(self.agent, "components") else []
+
+            return JSONResponse(
+                content={
+                    "status": "active",
+                    "agent_name": "Елена",
+                    "version": "1.0.0",
+                    "uptime": f"{int(hours)}ч {int(minutes)}м {int(seconds)}с",
+                    "components": components,
+                    "memory_usage": memory_usage,
+                    "request_count": self.request_count,
+                    "active_connections": len(self.manager.active_connections),
+                }
+            )
+
         @self.app.websocket("/ws")
         async def websocket_endpoint(websocket: WebSocket):
             """WebSocket соединение для реального времени"""
-            client_id = websocket.query_params.get('client_id', 'anonymous')
+            client_id = websocket.query_params.get("client_id", "anonymous")
             await self.manager.connect(websocket, client_id)
-            
+
             try:
                 # Отправляем приветственное сообщение
                 await self.manager.send_message(
-                    json.dumps({
-                        "type": "welcome",
-                        "message": "Добро пожаловать! Я Елена, ваш ассистент.",
-                        "timestamp": datetime.now().isoformat()
-                    }),
-                    websocket
+                    json.dumps(
+                        {
+                            "type": "welcome",
+                            "message": "Добро пожаловать! Я Елена, ваш ассистент.",
+                            "timestamp": datetime.now().isoformat(),
+                        }
+                    ),
+                    websocket,
                 )
-                
+
                 # Обрабатываем сообщения
                 while True:
                     data = await websocket.receive_text()
-                    
+
                     try:
                         message_data = json.loads(data)
-                        user_message = message_data.get('message', '')
+                        user_message = message_data.get("message", "")
                     except json.JSONDecodeError:
                         # Если не JSON, обрабатываем как обычный текст
                         user_message = data
-                    
+
                     logger.info(f"💬 [WebSocket {client_id}]: {user_message[:50]}...")
-                    
+
                     # Получаем настоящий ответ от Елены
                     conversation = None
-                    if hasattr(self.agent, 'components'):
-                        conversation = self.agent.components.get('conversation')
-                    
+                    if hasattr(self.agent, "components"):
+                        conversation = self.agent.components.get("conversation")
+
                     if conversation:
                         response = conversation.generate_response(user_message)
                     else:
                         response = "Извини, я временно не могу ответить."
-                    
+
                     # Отправляем ответ
                     await self.manager.send_message(
-                        json.dumps({
-                            "type": "response",
-                            "message": response,
-                            "timestamp": datetime.now().isoformat()
-                        }),
-                        websocket
+                        json.dumps({"type": "response", "message": response, "timestamp": datetime.now().isoformat()}),
+                        websocket,
                     )
-                    
+
             except WebSocketDisconnect:
                 self.manager.disconnect(websocket)
             except Exception as e:
                 logger.error(f"❌ Ошибка WebSocket: {e}")
                 self.manager.disconnect(websocket)
-        
+
         @self.app.get("/api/history")
         async def get_history(limit: int = 10):
             """Получение истории сообщений"""
             # Здесь можно добавить загрузку истории из памяти
-            return JSONResponse(content={
-                "history": [],
-                "total": 0
-            })
-        
+            return JSONResponse(content={"history": [], "total": 0})
+
         @self.app.get("/api/metrics")
         async def get_metrics():
             """Получение метрик производительности"""
-            return JSONResponse(content={
-                "requests": self.request_count,
-                "active_connections": len(self.manager.active_connections),
-                "uptime_seconds": (datetime.now() - self.start_time).total_seconds(),
-                "components_status": {
-                    name: "active" for name in getattr(self.agent, 'components', {}).keys()
+            return JSONResponse(
+                content={
+                    "requests": self.request_count,
+                    "active_connections": len(self.manager.active_connections),
+                    "uptime_seconds": (datetime.now() - self.start_time).total_seconds(),
+                    "components_status": {name: "active" for name in getattr(self.agent, "components", {}).keys()},
                 }
-            })
-    
+            )
+
     def run(self, host="127.0.0.1", port=8080):
         """
         Запуск веб-сервера (для отдельного потока)
         """
         logger.info(f"🚀 Запуск веб-интерфейса на http://{host}:{port}")
-        
+
         # Создаём и запускаем сервер
-        config = uvicorn.Config(
-            self.app,
-            host=host,
-            port=port,
-            log_level="warning",
-            reload=False
-        )
+        config = uvicorn.Config(self.app, host=host, port=port, log_level="warning", reload=False)
         server = uvicorn.Server(config)
-        
+
         try:
             server.run()
         except KeyboardInterrupt:
             logger.info("⏹️ Веб-интерфейс остановлен")
         except Exception as e:
             logger.error(f"❌ Ошибка веб-сервера: {e}")
-    
+
     async def run_async(self):
         """Асинхронный запуск (для встраивания)"""
-        config = uvicorn.Config(
-            self.app,
-            host="127.0.0.1",
-            port=8080,
-            log_level="warning",
-            reload=False
-        )
+        config = uvicorn.Config(self.app, host="127.0.0.1", port=8080, log_level="warning", reload=False)
         server = uvicorn.Server(config)
         await server.serve()
 
@@ -249,7 +229,7 @@ class BrowserApp:
 def start_browser_interface(config, agent):
     """
     Запуск веб-интерфейса в отдельном потоке
-    
+
     Args:
         config: конфигурация
         agent: агент Елены
@@ -742,14 +722,14 @@ def create_html_template():
     </script>
 </body>
 </html>"""
-    
+
     # Создаём директорию и файл
     template_dir = Path("/mnt/ai_data/ai-agent/src/interfaces/browser/templates")
     template_dir.mkdir(parents=True, exist_ok=True)
-    
-    with open(template_dir / "index.html", 'w', encoding='utf-8') as f:
+
+    with open(template_dir / "index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    
+
     logger.info(f"📄 HTML шаблон создан: {template_dir}/index.html")
 
 
