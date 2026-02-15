@@ -38,7 +38,7 @@ class ElenaAgent:
     def __init__(self, test_mode: bool = False):
         self.test_mode = test_mode
         self.running = False
-        self.components: dict[str, object] = {}  # ← ДОБАВИТЬ ЭТО
+        self.components: dict[str, object] = {}
         self.browser_thread = None
         self.telegram_bot = None
         
@@ -225,9 +225,25 @@ class ElenaAgent:
     async def terminal_loop(self):
         """Основной цикл общения в терминале"""
         conversation = self.components.get('conversation')
+        audio = self.components.get('audio')
         if not conversation:
             print("❌ Инструменты диалога не доступны")
             return
+        
+        # Проверка наличия микрофона
+        if audio:
+            try:
+                import sounddevice as sd
+                devices = sd.query_devices()
+                input_devices = [d for d in devices if d['max_input_channels'] > 0]
+                if input_devices:
+                    print(f"🎤 Найдено микрофонов: {len(input_devices)}")
+                else:
+                    print("⚠️ Микрофоны не найдены, голосовой ввод недоступен")
+                    audio = None
+            except Exception as e:
+                print(f"⚠️ Не удалось проверить микрофон: {e}")
+                audio = None
         
         print("\n" + "-"*60)
         print("💬 РЕЖИМ ОБЩЕНИЯ В ТЕРМИНАЛЕ")
@@ -238,7 +254,21 @@ class ElenaAgent:
         
         while self.running:
             try:
+                # Если есть аудио-движок, показываем индикатор микрофона
+                if audio:
+                    print("\n🎤 [Микрофон активен] Говорите или нажмите Enter для текстового ввода")
+                
                 user_input = input("\n👤 Вы: ").strip()
+                
+                # Если пользователь просто нажал Enter и есть микрофон - слушаем
+                if user_input == "" and audio:
+                    print("🎤 Слушаю... (говорите)")
+                    voice_text = await audio.listen()
+                    if voice_text:
+                        user_input = voice_text
+                        print(f"📝 Распознано: {user_input}")
+                    else:
+                        continue
                 
                 if user_input.lower() in ['выход', 'exit', 'quit', 'q']:
                     print("\n👋 Завершение работы...")
@@ -257,7 +287,6 @@ class ElenaAgent:
                 print("\r", end="")
                 print(f"\n💬 Елена: {response}")
                 
-                                    
             except KeyboardInterrupt:
                 print("\n\n👋 Получен сигнал прерывания")
                 self.running = False
