@@ -1,48 +1,48 @@
 # Core
-python-dotenv==1.2.1
-pyyaml==6.0.3
-loguru==0.7.3
+python-dotenv==1.0.0
+pyyaml==6.0.1
+loguru==0.7.2
 
 # ML & LLM
-torch==2.10.0
-transformers==5.1.0
-accelerate==1.12.0
-huggingface_hub==1.4.1  # ПРОМЕЖУТОЧНАЯ, РАБОЧАЯ ВЕРСИЯ
-sentence-transformers==5.2.2
-chromadb==1.5.0
-langchain==1.2.10
-langchain-community==0.4.1
+torch==2.5.1
+transformers==4.45.0
+accelerate==0.31.0
+huggingface_hub==0.25.0  # ПРОМЕЖУТОЧНАЯ, РАБОЧАЯ ВЕРСИЯ
+sentence-transformers==3.0.1
+chromadb==0.4.24
+langchain==0.2.5
+langchain-community==0.2.5
 
 # Vision
-opencv-python==4.13.0.92
-mss==10.1.0
-pillow==12.1.1
+opencv-python==4.9.0.80
+mss==9.0.1
+pillow>=9.2.0,<12.0
 
 # Audio
 pydub==0.25.1
-sounddevice==0.5.5
+sounddevice==0.4.6
 openai-whisper @ git+https://github.com/openai/whisper.git
 
 # Documents
 PyPDF2==3.0.1
-python-docx==1.2.0
-openpyxl==3.1.5
-python-pptx==1.0.2
-markdown==3.10.2
+python-docx==1.1.2
+openpyxl==3.1.2
+python-pptx==0.6.23
+markdown==3.6
 
 # Video
-moviepy==2.2.1
+moviepy==1.0.3
 
 # Interfaces
-python-telegram-bot==22.6
-fastapi==0.129.0
-uvicorn[standard]==0.40.0
-selenium==4.40.0
-webdriver-manager==4.0.2
+python-telegram-bot==20.8
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+selenium==4.21.0
+webdriver-manager==4.0.1
 
 # HTTP клиент
-httpx==0.28.1
+httpx==0.26.0
 
 # Utils
-watchdog==6.0.0
-psutil==7.2.2
+watchdog==4.0.1
+psutil==5.9.8
