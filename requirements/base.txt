@@ -12,7 +12,7 @@ sentence_transformers==3.0.1
 chromadb==0.4.24
 # Фиксируем версии 0.2.x для совместимости
 langchain==0.2.5
-langchain-community==0.2.5
+langchain-community==0.3.27
 langchain-core>=0.2.7,<0.3.0
 
 # Vision
