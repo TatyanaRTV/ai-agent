@@ -6,6 +6,7 @@ from pathlib import Path
 
 load_dotenv()
 
+
 def load_config(config_path: str = "configs/main.yaml") -> dict:
     """Загружает конфиг и подставляет переменные окружения."""
     with open(config_path, "r", encoding="utf-8") as f:
@@ -13,6 +14,7 @@ def load_config(config_path: str = "configs/main.yaml") -> dict:
     # Рекурсивная подстановка ${VAR}
     config = _substitute_env(config)
     return config
+
 
 def _substitute_env(obj):
     if isinstance(obj, dict):
