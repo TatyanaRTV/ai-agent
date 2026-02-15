@@ -4,12 +4,12 @@ pyyaml==6.0.1
 loguru==0.7.2
 
 # ML & LLM
-torch==2.3.0
-transformers==4.41.2
+torch==2.5.1
+transformers==4.45.0
 accelerate==0.31.0
-huggingface_hub==0.23.4
+huggingface_hub==0.25.0  # ПРОМЕЖУТОЧНАЯ, РАБОЧАЯ ВЕРСИЯ
 sentence-transformers==3.0.1
-chromadb==0.4.24           # Более старая версия, совместимая с httpx 0.26
+chromadb==0.4.24
 langchain==0.2.5
 langchain-community==0.2.5
 
@@ -40,8 +40,8 @@ uvicorn[standard]==0.30.1
 selenium==4.21.0
 webdriver-manager==4.0.1
 
-# HTTP клиент (общий для всех)
-httpx==0.26.0              # Фиксированная версия для совместимости
+# HTTP клиент
+httpx==0.26.0
 
 # Utils
 watchdog==4.0.1
