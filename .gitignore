@@ -2,3 +2,23 @@ launch.log
 *.log
 КОРНЕВАЯ СТРУКТУРА ПАПОК
 configs/secrets.yaml
+
+# Игнорируем временные копии файлов (старые версии)
+*.old
+
+# Игнорируем виртуальное окружение
+venv/
+.venv/
+
+# Игнорируем кэш Python и Mypy
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+
+# Игнорируем логи и временные данные (у тебя они в папке data)
+data/logs/
+data/temp/
+launch.log
+
+# Игнорируем секреты (токены Telegram и т.д.)
+.env

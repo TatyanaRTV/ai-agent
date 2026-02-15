@@ -12,6 +12,7 @@ from pathlib import Path
 import threading
 import queue
 import time
+from typing import Any, Dict, List, Optional, Union, cast
 from loguru import logger
 
 class VoiceEngine:
@@ -20,7 +21,7 @@ class VoiceEngine:
     Автоматически определяет доступные голоса и настройки
     """
     
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
         """
         Инициализация голосового движка
         
@@ -41,12 +42,13 @@ class VoiceEngine:
         self.temp_dir.mkdir(parents=True, exist_ok=True)
         
         # Проверка доступности RHVoice
+        self.rhvoice_command: str = "RHVoice-test"
         self.rhvoice_available = self._check_rhvoice()
         
-        # Очередь для асинхронного воспроизведения
-        self.speech_queue = queue.Queue()
+        # Очередь для асинхронного воспроизведения (Исправлено для MyPy: тип очереди)
+        self.speech_queue: queue.Queue[Optional[str]] = queue.Queue()
         self.is_speaking = False
-        self.speaker_thread = None
+        self.speaker_thread: Optional[threading.Thread] = None
         
         # Запуск потока для асинхронной речи
         self._start_speaker_thread()
@@ -57,7 +59,7 @@ class VoiceEngine:
         else:
             logger.warning("⚠️ RHVoice не найден, голосовой вывод отключён")
     
-    def _check_rhvoice(self):
+    def _check_rhvoice(self) -> bool:
         """Проверка наличия RHVoice в системе"""
         try:
             # Проверяем разные возможные имена исполняемых файлов
@@ -94,8 +96,8 @@ class VoiceEngine:
         except Exception as e:
             logger.error(f"❌ Ошибка проверки RHVoice: {e}")
             return False
-    
-    def _list_available_voices(self):
+
+    def _list_available_voices(self) -> None:
         """Получение списка доступных голосов"""
         try:
             result = subprocess.run(
@@ -121,14 +123,15 @@ class VoiceEngine:
                         self.voice_profile = 'natalia'
         except Exception as e:
             logger.error(f"❌ Ошибка получения списка голосов: {e}")
-    
-    def _start_speaker_thread(self):
+
+    def _start_speaker_thread(self) -> None:
         """Запуск потока для асинхронного воспроизведения"""
-        def speaker_worker():
+        def speaker_worker() -> None:
             while True:
                 try:
                     text = self.speech_queue.get()
                     if text is None:  # сигнал остановки
+                        self.speech_queue.task_done()
                         break
                     
                     self.is_speaking = True
@@ -144,7 +147,7 @@ class VoiceEngine:
         self.speaker_thread.start()
         logger.debug("🔊 Поток речи запущен")
     
-    def _speak_sync(self, text):
+    def _speak_sync(self, text: str) -> None:
         """
         Синхронное воспроизведение речи (внутренний метод)
         """
@@ -152,6 +155,7 @@ class VoiceEngine:
             logger.info(f"💬 (без голоса): {text}")
             return
         
+        output_file: str = ""
         # Создаём временный файл с уникальным именем
         with tempfile.NamedTemporaryFile(
             suffix='.wav', 
@@ -169,7 +173,7 @@ class VoiceEngine:
                     "-r", str(self.speed),
                     "-o", output_file
                 ]
-                # Передаём текст через STDIN
+                # Передаём текст через STDIN (как в твоем оригинале)
                 process = subprocess.Popen(
                     cmd,
                     stdin=subprocess.PIPE,
@@ -191,7 +195,7 @@ class VoiceEngine:
             
             # Проверяем, создан ли файл
             if os.path.exists(output_file) and os.path.getsize(output_file) > 0:
-                # Воспроизводим через aplay или paplay
+                # Воспроизводим через aplay или paplay (твой оригинальный цикл)
                 for player in ['aplay', 'paplay', 'play']:
                     if subprocess.run(['which', player], capture_output=True).returncode == 0:
                         subprocess.run([player, '-q', output_file])
@@ -208,11 +212,11 @@ class VoiceEngine:
         finally:
             # Очистка временного файла
             try:
-                if os.path.exists(output_file):
+                if output_file and os.path.exists(output_file):
                     os.unlink(output_file)
-            except:
+            except Exception:
                 pass
-    
+
     def speak(self, text: str) -> bool:
         """
         Асинхронное воспроизведение речи
@@ -235,8 +239,8 @@ class VoiceEngine:
         self.speech_queue.put(text)
         logger.debug(f"📝 Добавлено в очередь речи: {text[:50]}...")
         return True
-    
-    def speak_wait(self, text):
+
+    def speak_wait(self, text: str) -> None:
         """
         Синхронное воспроизведение речи (ждёт окончания)
         
@@ -253,33 +257,33 @@ class VoiceEngine:
         
         self._speak_sync(text)
     
-    def wait_until_done(self):
+    def wait_until_done(self) -> None:
         """Ожидание окончания всей речи в очереди"""
         self.speech_queue.join()
         while self.is_speaking:
             time.sleep(0.1)
     
-    def stop_speaking(self):
+    def stop_speaking(self) -> None:
         """Остановка текущей речи"""
         # Очищаем очередь
         while not self.speech_queue.empty():
             try:
                 self.speech_queue.get_nowait()
                 self.speech_queue.task_done()
-            except:
+            except Exception:
                 pass
         
         # Останавливаем текущее воспроизведение
         try:
             subprocess.run(['pkill', '-f', 'aplay'], capture_output=True)
             subprocess.run(['pkill', '-f', 'paplay'], capture_output=True)
-        except:
+        except Exception:
             pass
         
         self.is_speaking = False
         logger.debug("⏹️ Речь остановлена")
     
-    def test_voice(self):
+    def test_voice(self) -> None:
         """Тестирование голоса"""
         logger.info("🎤 ТЕСТ ГОЛОСА ЕЛЕНЫ")
         logger.info("=" * 40)
@@ -297,10 +301,10 @@ class VoiceEngine:
         
         logger.success("✅ Тест голоса завершён")
     
-    def set_voice_params(self, speed=None, pitch=None, volume=None):
+    def set_voice_params(self, speed: Optional[int] = None, pitch: Optional[int] = None, volume: Optional[int] = None) -> None:
         """Изменение параметров голоса"""
         if speed is not None:
-            self.speed = max(30, min(200, speed))  # ограничение от 30 до 200
+            self.speed = max(30, min(200, speed))
         if pitch is not None:
             self.pitch = max(0, min(100, pitch))
         if volume is not None:
@@ -308,7 +312,7 @@ class VoiceEngine:
         
         logger.info(f"⚙️ Параметры голоса: скорость={self.speed}, тон={self.pitch}, громкость={self.volume}")
     
-    def get_available_voices(self):
+    def get_available_voices(self) -> str:
         """Получение списка доступных голосов"""
         try:
             result = subprocess.run(
@@ -318,11 +322,11 @@ class VoiceEngine:
             )
             if result.returncode == 0:
                 return result.stdout
-        except:
+        except Exception:
             pass
         return "Список голосов недоступен"
     
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Очистка ресурсов перед завершением"""
         logger.info("🧹 Очистка голосового движка...")
         self.stop_speaking()
@@ -332,21 +336,20 @@ class VoiceEngine:
             self.speaker_thread.join(timeout=1)
         logger.success("✅ Голосовой движок остановлен")
 
-
-# Простой класс для быстрого тестирования (как в вашем примере)
+# Простой класс для быстрого тестирования
 class SimpleVoice:
     """Упрощённая версия для тестирования"""
     
-    def __init__(self):
+    def __init__(self) -> None:
         print("🎤 Инициализация простого голосового модуля...")
-        self.engine = VoiceEngine()
+        # Исправлено MyPy: передан конфиг (ошибка 360)
+        self.engine = VoiceEngine(config={})
     
-    def speak(self, text):
-        return self.engine.speak_wait(text)
+    def speak(self, text: str) -> None:
+        self.engine.speak_wait(text)
     
-    def test_voice(self):
+    def test_voice(self) -> None:
         self.engine.test_voice()
-
 
 # Если файл запущен напрямую
 if __name__ == "__main__":
@@ -356,10 +359,9 @@ if __name__ == "__main__":
     print("ТЕСТ ГОЛОСОВОГО МОДУЛЯ ЕЛЕНЫ")
     print("="*50)
     
-    # Создаём голосовой движок
-    voice = VoiceEngine()
+    # Исправлено MyPy: передан конфиг (ошибка 360)
+    voice = VoiceEngine(config={})
     
-    # Проверяем доступность
     if voice.rhvoice_available:
         print("\n📋 Доступные голоса:")
         print(voice.get_available_voices())
@@ -367,7 +369,6 @@ if __name__ == "__main__":
         print("\n🔊 Запуск теста голоса:")
         voice.test_voice()
         
-        # Тест асинхронной речи
         print("\n📝 Тест асинхронной речи:")
         voice.speak("Я могу говорить асинхронно.")
         voice.speak("Это значит, что я не блокирую программу.")
@@ -376,22 +377,17 @@ if __name__ == "__main__":
         print("⏳ Ожидание окончания речи...")
         voice.wait_until_done()
         
-        # Тест изменения голоса
         print("\n⚙️ Тест изменения параметров:")
-        voice.set_voice_params(speed=60)  # медленнее
+        voice.set_voice_params(speed=60)
         voice.speak_wait("Я говорю немного медленнее.")
         
-        voice.set_voice_params(speed=120, pitch=70)  # быстрее и выше
+        voice.set_voice_params(speed=120, pitch=70)
         voice.speak_wait("А теперь быстрее и выше.")
         
-        # Возвращаем нормальные параметры
         voice.set_voice_params(speed=85, pitch=50)
         
     else:
-        print("\n❌ RHVoice не найден. Установите:")
-        print("   sudo apt update")
-        print("   sudo apt install rhvoice")
-        print("\n📝 Для проверки работы без голоса:")
+        print("\n❌ RHVoice не найден. Установите: sudo apt install rhvoice")
         voice.speak_wait("Я работаю в текстовом режиме без голоса.")
     
     voice.cleanup()

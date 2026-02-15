@@ -3,32 +3,33 @@
 """Парсер документов различных форматов"""
 
 from pathlib import Path
+from typing import Any, List, Union, IO, cast
 import PyPDF2
-from docx import Document
-import openpyxl
-from pptx import Presentation
-import markdown
+from docx import Document  # type: ignore[import-untyped]
+import openpyxl  # type: ignore[import-untyped]
+from pptx import Presentation  # type: ignore[import-untyped]
+import markdown  # type: ignore[import-untyped]
 from loguru import logger
 
 
 class DocumentParser:
     """Парсер для работы с документами"""
     
-    def __init__(self, config):
+    def __init__(self, config: Any) -> None:
         self.config = config
         logger.info("📄 DocumentParser инициализирован")
     
-    def parse(self, file_path: str) -> str:
+    def parse(self, file_path: Union[str, Path]) -> str:
         """
         Парсинг документа в зависимости от расширения
         
         Args:
-            file_path: путь к файлу (строка)
+            file_path: путь к файлу (строка или Path)
             
         Returns:
             текст документа
         """
-        # Преобразуем строку в Path для работы с методами
+        # Преобразуем в Path для работы с методами
         path = Path(file_path)
         
         if not path.exists():
@@ -61,7 +62,7 @@ class DocumentParser:
     def _parse_pdf(self, file_path: Path) -> str:
         """Парсинг PDF файла"""
         try:
-            text = []
+            text: List[str] = []
             with open(file_path, 'rb') as f:
                 pdf_reader = PyPDF2.PdfReader(f)
                 for page in pdf_reader.pages:
@@ -76,7 +77,8 @@ class DocumentParser:
     def _parse_docx(self, file_path: Path) -> str:
         """Парсинг DOCX файла"""
         try:
-            doc = Document(file_path)
+            # Исправлено: Document ожидает str или IO, а не Path (ошибка arg-type)
+            doc = Document(str(file_path))
             return '\n'.join([paragraph.text for paragraph in doc.paragraphs if paragraph.text])
         except Exception as e:
             logger.error(f"❌ Ошибка парсинга DOCX: {e}")
@@ -85,8 +87,8 @@ class DocumentParser:
     def _parse_xlsx(self, file_path: Path) -> str:
         """Парсинг XLSX файла"""
         try:
-            wb = openpyxl.load_workbook(file_path, data_only=True)
-            text = []
+            wb = openpyxl.load_workbook(str(file_path), data_only=True)
+            text: List[str] = []
             for sheet in wb.worksheets:
                 for row in sheet.iter_rows(values_only=True):
                     row_text = ' '.join([str(cell) for cell in row if cell])
@@ -100,8 +102,8 @@ class DocumentParser:
     def _parse_pptx(self, file_path: Path) -> str:
         """Парсинг PPTX файла"""
         try:
-            prs = Presentation(file_path)
-            text = []
+            prs = Presentation(str(file_path))
+            text: List[str] = []
             for slide in prs.slides:
                 for shape in slide.shapes:
                     if hasattr(shape, "text") and shape.text:
@@ -117,7 +119,7 @@ class DocumentParser:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             html = markdown.markdown(content)
-            return html
+            return cast(str, html)
         except Exception as e:
             logger.error(f"❌ Ошибка парсинга MD: {e}")
             return ""

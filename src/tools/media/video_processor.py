@@ -3,7 +3,7 @@
 """Обработка видео файлов"""
 
 import cv2
-from moviepy.editor import VideoFileClip
+from moviepy.editor import VideoFileClip  # type: ignore[import-untyped]
 from pathlib import Path
 from loguru import logger
 

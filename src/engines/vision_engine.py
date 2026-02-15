@@ -2,19 +2,23 @@
 # Путь: /mnt/ai_data/ai-agent/src/engines/vision_engine.py
 """Зрительный модуль Елены на базе nanoLLaVA - стабильная и легкая модель"""
 
-import mss
+import mss  # type: ignore[import-untyped]
+import pyautogui  # type: ignore[import-untyped]
+import asyncio
 from PIL import Image
 from pathlib import Path
 from datetime import datetime
 import torch
-import transformers
-from transformers import AutoModelForCausalLM, AutoTokenizer
+import transformers  # type: ignore[import-untyped]
+from transformers import AutoModelForCausalLM, AutoTokenizer  # type: ignore[import-untyped]
 from loguru import logger
 import warnings
+from typing import Any, Optional, Dict, List, Union, cast, Tuple
 
 # Отключаем лишние предупреждения
-transformers.logging.set_verbosity_error()
-transformers.logging.disable_progress_bar()
+if hasattr(transformers, 'logging'):
+    cast(Any, transformers).logging.set_verbosity_error()
+    cast(Any, transformers).logging.disable_progress_bar()
 warnings.filterwarnings('ignore')
 
 
@@ -24,7 +28,7 @@ class VisionEngine:
     Надежная работа с актуальными версиями библиотек.
     """
     
-    def __init__(self, config):
+    def __init__(self, config: Dict[str, Any]) -> None:
         """
         Инициализация зрительного движка
         
@@ -42,8 +46,8 @@ class VisionEngine:
         self.sct = mss.mss()
         
         # Модель для анализа
-        self.model = None
-        self.tokenizer = None
+        self.model: Any = None
+        self.tokenizer: Any = None
         
         # Загружаем nanoLLaVA
         self._try_load_nanollava()
@@ -53,7 +57,7 @@ class VisionEngine:
         else:
             logger.warning("👁️ nanoLLaVA не загружен (скриншоты без анализа)")
     
-    def _get_device(self):
+    def _get_device(self) -> str:
         """Определение доступного устройства"""
         if torch.cuda.is_available():
             logger.info("🚀 Используется CUDA (GPU)")
@@ -62,10 +66,10 @@ class VisionEngine:
             logger.info("💻 Используется CPU")
             return "cpu"
     
-    def _try_load_nanollava(self):
+    def _try_load_nanollava(self) -> None:
         """Загрузка модели nanoLLaVA"""
         try:
-            model_name = "qnguyen3/nanoLLaVA"  # или "qnguyen3/nanoLLaVA-1.5" для улучшенной версии
+            model_name = "qnguyen3/nanoLLaVA"
             
             logger.info(f"📥 Загрузка nanoLLaVA...")
             
@@ -91,19 +95,34 @@ class VisionEngine:
             logger.warning(f"⚠️ nanoLLaVA не загружен: {e}")
             self.model = None
             self.tokenizer = None
-    
-    def capture_screen(self, monitor=1):
+
+    async def capture_screen(self, delay: int = 5) -> Optional[Image.Image]:
         """
-        Сделать скриншот экрана
+        Сделать скриншот экрана монитора, на котором находится курсор мыши
         
         Args:
-            monitor: номер монитора (1, 2, ...)
+            delay: задержка в секундах перед снимком
             
         Returns:
             PIL Image или None
         """
         try:
-            screenshot = self.sct.grab(self.sct.monitors[monitor])
+            logger.info(f"⏳ Задержка {delay} секунд перед скриншотом...")
+            await asyncio.sleep(delay)
+            
+            # Определяем позицию мыши через pyautogui
+            mouse_x, mouse_y = pyautogui.position()
+            
+            # Поиск монитора, где находится курсор (пропускаем первый элемент sct.monitors[0])
+            target_monitor = self.sct.monitors[0]
+            for i, monitor in enumerate(self.sct.monitors[1:], 1):
+                if (monitor["left"] <= mouse_x < monitor["left"] + monitor["width"] and
+                    monitor["top"] <= mouse_y < monitor["top"] + monitor["height"]):
+                    target_monitor = monitor
+                    logger.info(f"🖥️ Захват монитора №{i} (мышь на x={mouse_x}, y={mouse_y})")
+                    break
+            
+            screenshot = self.sct.grab(target_monitor)
             img = Image.frombytes("RGB", screenshot.size, screenshot.rgb)
             
             # Сохраняем для истории
@@ -113,21 +132,13 @@ class VisionEngine:
             logger.debug(f"📸 Скриншот сохранён: {save_path}")
             
             return img
-            
         except Exception as e:
             logger.error(f"❌ Ошибка захвата экрана: {e}")
             return None
     
-    def describe(self, image: Image.Image, prompt: str = "Опиши это изображение подробно на русском языке"):
+    def describe(self, image: Image.Image, prompt: str = "Опиши это изображение подробно на русском языке") -> str:
         """
         Анализ изображения с помощью nanoLLaVA
-        
-        Args:
-            image: PIL Image
-            prompt: запрос для описания
-            
-        Returns:
-            описание изображения
         """
         if self.model is None or self.tokenizer is None:
             return self._basic_description(image)
@@ -152,13 +163,14 @@ class VisionEngine:
                 input_ids = input_ids.cuda()
             
             # Обрабатываем изображение
-            image_tensor = self.model.process_images([image], self.model.config).to(dtype=self.model.dtype)
+            model_any = cast(Any, self.model)
+            image_tensor = model_any.process_images([image], model_any.config).to(dtype=model_any.dtype)
             if self.device == "cuda":
                 image_tensor = image_tensor.cuda()
             
             # Генерируем ответ
             with torch.no_grad():
-                output_ids = self.model.generate(
+                output_ids = model_any.generate(
                     input_ids,
                     images=image_tensor,
                     max_new_tokens=200,
@@ -174,33 +186,30 @@ class VisionEngine:
             ).strip()
             
             logger.info(f"📝 nanoLLaVA: {answer[:100]}...")
-            return answer
+            return cast(str, answer)
             
         except Exception as e:
             logger.error(f"❌ Ошибка анализа изображения: {e}")
             return self._basic_description(image)
     
-    def _basic_description(self, image):
+    def _basic_description(self, image: Image.Image) -> str:
         """Базовое описание без ML модели"""
         try:
-            width, height = image.size
+            # Явная распаковка для MyPy
+            size: Tuple[int, int] = image.size
+            width, height = size
             mode = image.mode
             
             desc = f"Изображение размером {width}x{height} пикселей, {mode}"
-            
-            if mode == 'L':
-                desc += ", чёрно-белое"
-            elif mode == 'RGB':
-                desc += ", цветное"
-            elif mode == 'RGBA':
-                desc += ", цветное с прозрачностью"
+            if mode == 'L': desc += ", чёрно-белое"
+            elif mode == 'RGB': desc += ", цветное"
+            elif mode == 'RGBA': desc += ", цветное с прозрачностью"
             
             return desc
-            
         except Exception:
             return "Не удалось получить информацию об изображении"
     
-    def unload_model(self):
+    def unload_model(self) -> None:
         """Выгрузка модели из памяти"""
         if self.model is not None:
             self.model = self.model.cpu()
@@ -217,6 +226,6 @@ class VisionEngine:
             gc.collect()
             logger.info("🧹 nanoLLaVA выгружен из памяти")
     
-    def is_model_loaded(self):
+    def is_model_loaded(self) -> bool:
         """Проверка, загружена ли модель"""
         return self.model is not None and self.tokenizer is not None

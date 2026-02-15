@@ -2,8 +2,8 @@
 # Путь: /mnt/ai_data/ai-agent/src/tools/media/audio_processor.py
 """Обработка аудио файлов"""
 
-import whisper
-from pydub import AudioSegment
+import whisper  # type: ignore[import-untyped]
+from pydub import AudioSegment  # type: ignore[import-untyped]
 from pathlib import Path
 from loguru import logger
 import os

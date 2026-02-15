@@ -1,0 +1,21 @@
+[tool.mypy]
+python_version = "3.11"
+
+# Указываем только текущую папку как базу, чтобы не "двоилось"
+mypy_path = "."
+explicit_package_bases = true
+namespace_packages = true
+
+# Игнорируем внешние библиотеки (sounddevice, frontmatter, loguru)
+ignore_missing_imports = true
+
+# Не ломаем логику в больших модулях
+check_untyped_defs = false
+# Полностью исключаем папку src из прямого сканирования, если сканируем корень
+# Или просто исключаем мусор
+exclude = ['venv/', '\.old$', 'tests/']
+
+[[tool.mypy.overrides]]
+# Разрешаем динамику в твоих основных папках
+module = ["src.core.*", "src.interfaces.*", "src.utils.*"]
+ignore_errors = false

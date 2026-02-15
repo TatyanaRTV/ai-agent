@@ -5,10 +5,15 @@
 Позволяет Елене читать и создавать заметки в Obsidian хранилище
 """
 
-from pathlib import Path
+import os
 import re
+import json
+from pathlib import Path
 from datetime import datetime
-import frontmatter
+from typing import Any, Dict, List, Optional, Union
+
+# Библиотека для работы с YAML в Markdown
+import frontmatter  # type: ignore
 from loguru import logger
 
 
@@ -18,7 +23,13 @@ class ObsidianConnector:
     Позволяет работать с заметками, тегами, ссылками
     """
     
-    def __init__(self, vault_path: str):
+    # Аннотации для Mypy (устраняют ошибки var-annotated)
+    vault_path: Path
+    stats: Dict[str, Any]
+    notes_cache: Dict[str, Dict[str, Any]]
+    tags_cache: Dict[str, List[str]]
+
+    def __init__(self, vault_path: Union[str, Path]):
         """
         Инициализация коннектора к Obsidian
         
@@ -44,8 +55,8 @@ class ObsidianConnector:
         
         logger.info(f"📔 Obsidian коннектор инициализирован: {self.vault_path}")
         logger.info(f"   📊 Найдено заметок: {self.stats['total_notes']}")
-    
-    def _scan_vault(self):
+
+    def _scan_vault(self) -> None:
         """Сканирование хранилища и сбор статистики"""
         self.notes_cache.clear()
         self.tags_cache.clear()
@@ -56,18 +67,20 @@ class ObsidianConnector:
         
         for md_file in md_files:
             try:
-                # Читаем метаданные заметки
+                # Читаем содержимое заметки
                 with open(md_file, 'r', encoding='utf-8') as f:
                     content = f.read()
                 
                 # Парсим frontmatter если есть
+                metadata: Dict[str, Any] = {}
                 if content.startswith('---'):
-                    post = frontmatter.loads(content)
-                    metadata = post.metadata
-                else:
-                    metadata = {}
+                    try:
+                        post = frontmatter.loads(content)
+                        metadata = dict(post.metadata)
+                    except Exception:
+                        metadata = {}
                 
-                # Извлекаем теги из содержимого
+                # Извлекаем теги из содержимого #tag
                 tags = re.findall(r'#(\w+)', content)
                 metadata['tags'] = tags
                 
@@ -76,8 +89,8 @@ class ObsidianConnector:
                 metadata['links'] = links
                 
                 # Сохраняем в кэш
-                rel_path = md_file.relative_to(self.vault_path)
-                self.notes_cache[str(rel_path)] = {
+                rel_path = str(md_file.relative_to(self.vault_path))
+                self.notes_cache[rel_path] = {
                     'path': md_file,
                     'title': md_file.stem,
                     'metadata': metadata,
@@ -90,26 +103,18 @@ class ObsidianConnector:
                 for tag in tags:
                     if tag not in self.tags_cache:
                         self.tags_cache[tag] = []
-                    self.tags_cache[tag].append(str(rel_path))
+                    self.tags_cache[tag].append(rel_path)
                 
             except Exception as e:
                 logger.error(f"❌ Ошибка чтения {md_file}: {e}")
         
         self.stats['total_tags'] = len(self.tags_cache)
         logger.debug(f"📊 Найдено тегов: {self.stats['total_tags']}")
-    
-    def create_note(self, title: str, content: str, tags=None, folder=None):
+
+
+    def create_note(self, title: str, content: str, tags: Optional[List[str]] = None, folder: Optional[str] = None) -> str:
         """
         Создание новой заметки
-        
-        Args:
-            title: заголовок заметки (будет именем файла)
-            content: содержимое заметки в Markdown
-            tags: список тегов
-            folder: подпапка в хранилище (опционально)
-            
-        Returns:
-            путь к созданной заметке
         """
         # Очищаем заголовок от недопустимых символов
         clean_title = re.sub(r'[<>:"/\\|?*]', '', title)
@@ -127,18 +132,13 @@ class ObsidianConnector:
             base = note_path.stem
             counter = 1
             while note_path.exists():
-                note_path = note_path.with_stem(f"{base}_{counter}")
+                note_path = note_path.with_name(f"{base}_{counter}.md")
                 counter += 1
         
         # Формируем frontmatter если есть теги
         if tags:
             yaml_tags = '\n'.join([f'  - {tag}' for tag in tags])
-            frontmatter_text = f"""---
-tags:
-{yaml_tags}
-created: {datetime.now().strftime('%Y-%m-%d %H:%M')}
----
-"""
+            frontmatter_text = f"---\ntags:\n{yaml_tags}\ncreated: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n---\n"
             full_content = frontmatter_text + "\n" + content
         else:
             full_content = content
@@ -154,20 +154,13 @@ created: {datetime.now().strftime('%Y-%m-%d %H:%M')}
         
         return str(note_path)
     
-    def read_note(self, note_name: str, folder=None):
+    def read_note(self, note_name: str, folder: Optional[str] = None) -> Optional[str]:
         """
         Чтение заметки
-        
-        Args:
-            note_name: имя заметки (без .md) или путь
-            folder: папка (если note_name не содержит путь)
-            
-        Returns:
-            содержимое заметки или None
         """
         # Определяем путь
         if folder:
-            note_path = self.vault_path / folder / f"{note_name}.md"
+            note_path: Optional[Path] = self.vault_path / folder / f"{note_name}.md"
         else:
             # Ищем по имени во всем хранилище
             note_path = None
@@ -189,24 +182,18 @@ created: {datetime.now().strftime('%Y-%m-%d %H:%M')}
         except Exception as e:
             logger.error(f"❌ Ошибка чтения {note_path}: {e}")
             return None
-    
-    def update_note(self, note_name: str, content: str, folder=None):
+
+
+
+    def update_note(self, note_name: str, content: str, folder: Optional[str] = None) -> bool:
         """
         Обновление существующей заметки
-        
-        Args:
-            note_name: имя заметки
-            content: новое содержимое
-            folder: папка
-            
-        Returns:
-            bool: успешно или нет
         """
         # Находим заметку
+        note_path: Optional[Path] = None
         if folder:
             note_path = self.vault_path / folder / f"{note_name}.md"
         else:
-            note_path = None
             for md_file in self.vault_path.rglob("*.md"):
                 if md_file.stem == note_name:
                     note_path = md_file
@@ -239,29 +226,21 @@ created: {datetime.now().strftime('%Y-%m-%d %H:%M')}
             
             # Обновляем кэш
             self._scan_vault()
-            
             return True
             
         except Exception as e:
             logger.error(f"❌ Ошибка обновления {note_path}: {e}")
             return False
-    
-    def delete_note(self, note_name: str, folder=None):
+
+    def delete_note(self, note_name: str, folder: Optional[str] = None) -> bool:
         """
         Удаление заметки
-        
-        Args:
-            note_name: имя заметки
-            folder: папка
-            
-        Returns:
-            bool: успешно или нет
         """
         # Находим заметку
+        note_path: Optional[Path] = None
         if folder:
             note_path = self.vault_path / folder / f"{note_name}.md"
         else:
-            note_path = None
             for md_file in self.vault_path.rglob("*.md"):
                 if md_file.stem == note_name:
                     note_path = md_file
@@ -277,29 +256,21 @@ created: {datetime.now().strftime('%Y-%m-%d %H:%M')}
             
             # Обновляем кэш
             self._scan_vault()
-            
             return True
         except Exception as e:
             logger.error(f"❌ Ошибка удаления {note_path}: {e}")
             return False
-    
-    def search_notes(self, query: str, search_type='all'):
+
+    def search_notes(self, query: str, search_type: str = 'all') -> List[Dict[str, Any]]:
         """
         Поиск заметок
-        
-        Args:
-            query: поисковый запрос
-            search_type: 'title', 'content', 'tags', 'all'
-            
-        Returns:
-            список найденных заметок с релевантностью
         """
-        results = []
+        results: List[Dict[str, Any]] = []
         query_lower = query.lower()
         
         for rel_path, note_info in self.notes_cache.items():
             score = 0
-            matches = []
+            matches: List[str] = []
             
             # Поиск в заголовке
             if search_type in ['title', 'all'] and query_lower in note_info['title'].lower():
@@ -313,7 +284,7 @@ created: {datetime.now().strftime('%Y-%m-%d %H:%M')}
                         score += 5
                         matches.append(f'tag:{tag}')
             
-            # Поиск в содержимом (если нужно)
+            # Поиск в содержимом
             if search_type in ['content', 'all']:
                 try:
                     with open(note_info['path'], 'r', encoding='utf-8') as f:
@@ -321,7 +292,7 @@ created: {datetime.now().strftime('%Y-%m-%d %H:%M')}
                     if query_lower in content:
                         score += 1
                         matches.append('content')
-                except:
+                except Exception:
                     pass
             
             if score > 0:
@@ -339,15 +310,9 @@ created: {datetime.now().strftime('%Y-%m-%d %H:%M')}
         logger.debug(f"🔍 Поиск '{query}': найдено {len(results)} результатов")
         return results
     
-    def get_notes_by_tag(self, tag: str):
+    def get_notes_by_tag(self, tag: str) -> List[Dict[str, Any]]:
         """
         Получение всех заметок с определённым тегом
-        
-        Args:
-            tag: тег (без #)
-            
-        Returns:
-            список заметок с этим тегом
         """
         tag = tag.lstrip('#')
         notes = self.tags_cache.get(tag, [])
@@ -359,30 +324,21 @@ created: {datetime.now().strftime('%Y-%m-%d %H:%M')}
         
         logger.debug(f"🏷️ Тег #{tag}: {len(result)} заметок")
         return result
-    
-    def get_all_tags(self):
+
+    def get_all_tags(self) -> Dict[str, int]:
         """Получение всех тегов с количеством использований"""
         tags_with_count = {}
         for tag, notes in self.tags_cache.items():
             tags_with_count[tag] = len(notes)
         
         return dict(sorted(tags_with_count.items(), key=lambda x: x[1], reverse=True))
-    
-    def create_link(self, from_note: str, to_note: str, alias=None):
+
+    def create_link(self, from_note: str, to_note: str, alias: Optional[str] = None) -> bool:
         """
         Создание вики-ссылки между заметками
-        
-        Args:
-            from_note: заметка, в которую добавить ссылку
-            to_note: заметка, на которую ссылаться
-            alias: отображаемый текст (опционально)
-            
-        Returns:
-            bool: успешно или нет
         """
-        # Находим заметки
-        from_path = None
-        to_name = None
+        from_path: Optional[Path] = None
+        to_name: Optional[str] = None
         
         for rel_path, info in self.notes_cache.items():
             if info['title'] == from_note:
@@ -399,10 +355,7 @@ created: {datetime.now().strftime('%Y-%m-%d %H:%M')}
                 content = f.read()
             
             # Создаем ссылку
-            if alias:
-                link = f"[[{to_name}|{alias}]]"
-            else:
-                link = f"[[{to_name}]]"
+            link = f"[[{to_name}|{alias}]]" if alias else f"[[{to_name}]]"
             
             # Добавляем в конец
             new_content = content + f"\n\n{link}"
@@ -411,41 +364,26 @@ created: {datetime.now().strftime('%Y-%m-%d %H:%M')}
                 f.write(new_content)
             
             logger.info(f"🔗 Создана ссылка из {from_note} на {to_name}")
-            
-            # Обновляем кэш
             self._scan_vault()
-            
             return True
             
         except Exception as e:
             logger.error(f"❌ Ошибка создания ссылки: {e}")
             return False
-    
-    def get_backlinks(self, note_name: str):
+
+    def get_backlinks(self, note_name: str) -> List[Dict[str, str]]:
         """
-        Получение всех ссылающихся на заметку
-        
-        Args:
-            note_name: имя заметки
-            
-        Returns:
-            список заметок, которые ссылаются на данную
+        Получение обратных ссылок
         """
         backlinks = []
-        
         for rel_path, info in self.notes_cache.items():
             if note_name in info.get('links', []):
-                backlinks.append({
-                    'path': rel_path,
-                    'title': info['title']
-                })
-        
+                backlinks.append({'path': rel_path, 'title': info['title']})
         return backlinks
     
-    def get_stats(self):
-        """Получение статистики по хранилищу"""
-        self._scan_vault()  # Обновляем
-        
+    def get_stats(self) -> Dict[str, Any]:
+        """Получение статистики"""
+        self._scan_vault()
         return {
             'total_notes': self.stats['total_notes'],
             'total_tags': self.stats['total_tags'],
@@ -453,17 +391,11 @@ created: {datetime.now().strftime('%Y-%m-%d %H:%M')}
             'tags': self.get_all_tags()
         }
     
-    def export_to_json(self, output_path=None):
+    def export_to_json(self, output_path: Optional[str] = None) -> Dict[str, Any]:
         """
         Экспорт всего хранилища в JSON
-        
-        Args:
-            output_path: путь для сохранения (опционально)
-            
-        Returns:
-            dict с данными всех заметок
         """
-        export_data = {
+        export_data: Dict[str, Any] = {
             'vault': str(self.vault_path),
             'exported': datetime.now().isoformat(),
             'stats': self.stats,
@@ -486,9 +418,18 @@ created: {datetime.now().strftime('%Y-%m-%d %H:%M')}
                 logger.error(f"❌ Ошибка экспорта {rel_path}: {e}")
         
         if output_path:
-            import json
             with open(output_path, 'w', encoding='utf-8') as f:
                 json.dump(export_data, f, ensure_ascii=False, indent=2)
             logger.info(f"💾 Экспорт сохранён в {output_path}")
         
         return export_data
+
+if __name__ == "__main__":
+    # Тестовый запуск
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--vault', type=str, default="data/test_vault")
+    args = parser.parse_args()
+    
+    connector = ObsidianConnector(args.vault)
+    print(connector.get_stats())

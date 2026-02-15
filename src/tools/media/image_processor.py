@@ -3,24 +3,25 @@
 """Обработка изображений"""
 
 from PIL import Image
-import cv2
-import numpy as np
+import cv2  # type: ignore[import-untyped]
+import numpy as np  # type: ignore[import-untyped]
 from pathlib import Path
+from typing import Any, Dict, Optional, Union, Tuple
 from loguru import logger
 
 
 class ImageProcessor:
     """Обработчик изображений"""
     
-    def __init__(self, config):
+    def __init__(self, config: Any) -> None:
         self.config = config
         logger.info("🖼️ ImageProcessor инициализирован")
     
-    def get_info(self, file_path):
+    def get_info(self, file_path: Union[str, Path]) -> Optional[Dict[str, Any]]:
         """Получение информации об изображении"""
         try:
             img = Image.open(file_path)
-            info = {
+            info: Dict[str, Any] = {
                 'format': img.format,
                 'size': img.size,
                 'mode': img.mode,
@@ -33,7 +34,7 @@ class ImageProcessor:
             logger.error(f"❌ Ошибка получения информации: {e}")
             return None
     
-    def resize(self, file_path, width=None, height=None):
+    def resize(self, file_path: Union[str, Path], width: Optional[int] = None, height: Optional[int] = None) -> Optional[str]:
         """Изменение размера изображения"""
         try:
             img = Image.open(file_path)
@@ -41,15 +42,15 @@ class ImageProcessor:
             if width and height:
                 resized = img.resize((width, height), Image.Resampling.LANCZOS)
             elif width:
-                ratio = width / img.width
-                height = int(img.height * ratio)
-                resized = img.resize((width, height), Image.Resampling.LANCZOS)
+                ratio_w = float(width) / img.width
+                calc_height = int(img.height * ratio_w)
+                resized = img.resize((width, calc_height), Image.Resampling.LANCZOS)
             elif height:
-                ratio = height / img.height
-                width = int(img.width * ratio)
-                resized = img.resize((width, height), Image.Resampling.LANCZOS)
+                ratio_h = float(height) / img.height
+                calc_width = int(img.width * ratio_h)
+                resized = img.resize((calc_width, height), Image.Resampling.LANCZOS)
             else:
-                return file_path
+                return str(file_path)
             
             output_path = Path(file_path).parent / f"resized_{Path(file_path).name}"
             resized.save(output_path)
@@ -60,7 +61,7 @@ class ImageProcessor:
             logger.error(f"❌ Ошибка изменения размера: {e}")
             return None
     
-    def convert_format(self, file_path, output_format='JPEG'):
+    def convert_format(self, file_path: Union[str, Path], output_format: str = 'JPEG') -> Optional[str]:
         """Конвертация в другой формат"""
         try:
             img = Image.open(file_path)

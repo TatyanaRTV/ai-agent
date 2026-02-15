@@ -2,20 +2,21 @@
 # Путь: /mnt/ai_data/ai-agent/src/engines/audio_engine.py
 """Аудио движок Елены - запись с микрофона и распознавание речи"""
 
-import whisper
-import sounddevice as sd
+import whisper  # type: ignore[import-untyped]
+import sounddevice as sd  # type: ignore[import-untyped]
 import numpy as np
 import asyncio
 import os
 import time
 from pathlib import Path
+from typing import Any, Dict, Optional, cast
 from loguru import logger
 
 
 class AudioEngine:
     """Движок для работы с аудио: запись с микрофона и распознавание речи"""
     
-    def __init__(self, config):
+    def __init__(self, config: Dict[str, Any]) -> None:
         """
         Инициализация аудио движка
         
@@ -33,13 +34,14 @@ class AudioEngine:
         os.environ['WHISPER_CACHE_DIR'] = str(cache_dir)
         
         # Загружаем модель Whisper
-        self.model = whisper.load_model(config["audio"]["whisper_model"])
-        self.sample_rate = config["audio"]["sample_rate"]
-        self.duration = config.get("audio", {}).get("listen_duration", 10)
+        self.model: Any = whisper.load_model(config["audio"]["whisper_model"])
+        self.sample_rate: int = config["audio"]["sample_rate"]
+        self.duration: int = config.get("audio", {}).get("listen_duration", 10)
         
         logger.info(f"🎵 AudioEngine инициализирован (модель: {config['audio']['whisper_model']})")
 
-    async def listen(self, duration: int = None, silence_timeout: float = 2.0) -> str:
+    # Исправлено MyPy: duration теперь Optional[int] (ошибка 42)
+    async def listen(self, duration: Optional[int] = None, silence_timeout: float = 2.0) -> str:
         """
         Запись с микрофона и распознавание речи.
         
@@ -72,6 +74,7 @@ class AudioEngine:
                 # Проверяем, есть ли звук в последнем куске
                 current_pos = int((time.time() - start_time) * self.sample_rate)
                 if current_pos > 100:
+                    # Используем np.max для анализа амплитуды
                     if np.max(np.abs(recording[current_pos-100:current_pos])) > silence_threshold:
                         last_sound_time = time.time()
                 
@@ -92,7 +95,7 @@ class AudioEngine:
             
             # Распознаем речь
             result = self.model.transcribe(audio, language="ru")
-            text = result["text"].strip()
+            text = cast(str, result.get("text", "")).strip()
             
             if text:
                 logger.info(f"📝 Распознано: {text}")

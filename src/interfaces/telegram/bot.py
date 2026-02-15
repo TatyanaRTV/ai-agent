@@ -5,12 +5,18 @@
 import asyncio
 import threading
 import time
+import subprocess
 from pathlib import Path
-from telegram import Update
+from typing import TYPE_CHECKING, Any, Dict, Set, Optional, cast, Union
+
+from telegram import Update, Message, User, Chat, Voice
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from loguru import logger
 import os
-from typing import TYPE_CHECKING
+
+# Игнорируем отсутствие типов для прохождения CI MyPy
+import whisper  # type: ignore[import-untyped]
+import sounddevice  # type: ignore[import-untyped]
 
 if TYPE_CHECKING:
     from src.core.bootstrap import ElenaAgent
@@ -25,25 +31,23 @@ class TelegramBot:
     def __init__(self, token: str, agent: 'ElenaAgent'):
         """
         Инициализация Telegram бота
-        
-        Args:
-            token: токен бота от @BotFather
-            agent: ссылка на главный класс агента Елены
         """
-        self.token = token
-        self.agent = agent
-        self.application = None
-        self._thread = None
-        self._loop = None
-        self._running = False
-        self._processed_messages = set()
-        self._last_message_time = {}
+        self.token: str = token
+        self.agent: 'ElenaAgent' = agent
+        self.application: Optional[Application] = None
+        self._thread: Optional[threading.Thread] = None
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._running: bool = False
+        
+        # Исправлено: добавлены аннотации типов (ошибки 39, 40)
+        self._processed_messages: Set[str] = set()
+        self._last_message_time: Dict[int, float] = {}
         
         logger.info("📱 Telegram бот инициализирован")
     
-    def _get_component_status(self):
+    def _get_component_status(self) -> Dict[str, Any]:
         """Получает статус всех компонентов из агента"""
-        status = {
+        status: Dict[str, Any] = {
             'memory': False,
             'voice': False,
             'vision': False,
@@ -51,18 +55,19 @@ class TelegramBot:
             'memory_count': 0
         }
         
-        if hasattr(self.agent, 'components'):
-            status['memory'] = 'memory' in self.agent.components
-            status['voice'] = 'voice' in self.agent.components
-            status['vision'] = 'vision' in self.agent.components
-            status['tool_executor'] = 'tool_executor' in self.agent.components
+        agent_any = cast(Any, self.agent)
+        if hasattr(agent_any, 'components'):
+            status['memory'] = 'memory' in agent_any.components
+            status['voice'] = 'voice' in agent_any.components
+            status['vision'] = 'vision' in agent_any.components
+            status['tool_executor'] = 'tool_executor' in agent_any.components
             
-            if status['memory'] and hasattr(self.agent.components['memory'], 'short_term'):
-                status['memory_count'] = len(self.agent.components['memory'].short_term)
+            if status['memory'] and hasattr(agent_any.components['memory'], 'short_term'):
+                status['memory_count'] = len(agent_any.components['memory'].short_term)
         
         return status
     
-    def _build_application(self):
+    def _build_application(self) -> None:
         """Создание Application (вызывается в главном потоке)"""
         self.application = (
             Application.builder()
@@ -72,8 +77,11 @@ class TelegramBot:
         self._register_handlers()
         logger.debug("📱 Application построен")
     
-    def _register_handlers(self):
+    def _register_handlers(self) -> None:
         """Регистрация всех обработчиков"""
+        if not self.application:
+            return
+            
         # Команды
         self.application.add_handler(CommandHandler("start", self.cmd_start))
         self.application.add_handler(CommandHandler("help", self.cmd_help))
@@ -87,8 +95,8 @@ class TelegramBot:
         
         logger.debug("📱 Обработчики зарегистрированы")
     
-    def start(self):
-        """Запуск бота в отдельном потоке (вызывается из главного потока)"""
+    def start(self) -> None:
+        """Запуск бота в отдельном потоке"""
         if self._thread and self._thread.is_alive():
             logger.warning("📱 Telegram бот уже запущен")
             return
@@ -99,7 +107,7 @@ class TelegramBot:
         self._thread.start()
         logger.info("✅ Telegram бот запущен в фоновом потоке")
     
-    def _thread_target(self):
+    def _thread_target(self) -> None:
         """Целевая функция для потока - здесь создается event loop"""
         self._loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._loop)
@@ -112,29 +120,33 @@ class TelegramBot:
             if self._loop:
                 self._loop.close()
             logger.info("⏹️ Поток Telegram завершен")
-    
-    async def _run_bot(self):
+
+    async def _run_bot(self) -> None:
         """Асинхронный запуск бота с автоматическим переподключением"""
+        if not self.application:
+            return
+
         logger.info("🚀 Запуск Telegram бота в потоке...")
         
         while self._running:
             try:
                 await self.application.initialize()
                 await self.application.start()
-                await self.application.updater.start_polling(
-                    drop_pending_updates=True,
-                    timeout=30,
-                    read_timeout=30,
-                    write_timeout=30,
-                    connect_timeout=30
-                )
-                # Убрано логирование "слушает сообщения" - не конфликтует с терминалом
+                if self.application.updater:
+                    await self.application.updater.start_polling(
+                        drop_pending_updates=True,
+                        timeout=30,
+                        read_timeout=30,
+                        write_timeout=30,
+                        connect_timeout=30
+                    )
                 
                 while self._running:
                     await asyncio.sleep(1)
                     
             except Exception as e:
-                if "RemoteProtocolError" in str(e) or "NetworkError" in str(e):
+                err_str = str(e)
+                if "RemoteProtocolError" in err_str or "NetworkError" in err_str:
                     logger.warning(f"🔄 Сетевой сбой Telegram: {e}. Переподключение через 5 сек...")
                     await asyncio.sleep(5)
                 else:
@@ -142,14 +154,14 @@ class TelegramBot:
                     break
             finally:
                 try:
-                    if self.application.updater.running:
+                    if self.application and self.application.updater and self.application.updater.running:
                         await self.application.updater.stop()
-                    if self.application.running:
+                    if self.application and self.application.running:
                         await self.application.stop()
-                except:
+                except Exception:
                     pass
     
-    def stop(self):
+    def stop(self) -> None:
         """Остановка бота (вызывается из главного потока)"""
         if not self._running:
             return
@@ -163,9 +175,13 @@ class TelegramBot:
         logger.success("✅ Telegram бот остановлен")
     
     # --- Обработчики команд ---
-    async def cmd_start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def cmd_start(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Обработчик команды /start"""
-        user = update.effective_user
+        # Исправлено для MyPy: проверка наличия сообщения и пользователя
+        if not update.message or not update.effective_user:
+            return
+            
+        user: User = update.effective_user
         await update.message.reply_text(
             f"🌟 Привет, {user.first_name}!\n\n"
             f"Я Елена, твой персональный ИИ-ассистент.\n"
@@ -173,8 +189,11 @@ class TelegramBot:
         )
         logger.info(f"👤 Новый пользователь Telegram: {user.first_name}")
     
-    async def cmd_help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def cmd_help(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Обработчик команды /help"""
+        if not update.message:
+            return
+
         help_text = (
             "📚 **Доступные команды:**\n\n"
             "/start - Начать работу\n"
@@ -188,11 +207,13 @@ class TelegramBot:
             "Просто напиши мне сообщение - я отвечу!"
         )
         await update.message.reply_text(help_text, parse_mode='Markdown')
-    
-    async def cmd_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    async def cmd_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Показывает статус системы"""
+        if not update.message:
+            return
+            
         status = self._get_component_status()
-        
         memory_text = f"{status['memory_count']} в памяти" if status['memory'] else "недоступно"
         
         status_text = (
@@ -204,12 +225,15 @@ class TelegramBot:
         )
         await update.message.reply_text(status_text, parse_mode='Markdown')
     
-    async def handle_text(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def handle_text(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Обработка текстовых сообщений с защитой от повторов"""
-        user_text = update.message.text
-        user = update.effective_user
-        message_id = update.message.message_id
-        chat_id = update.effective_chat.id
+        if not update.message or not update.message.text or not update.effective_user or not update.effective_chat:
+            return
+            
+        user_text: str = update.message.text
+        user: User = update.effective_user
+        message_id: int = update.message.message_id
+        chat_id: int = update.effective_chat.id
         
         # Защита от повторной обработки того же сообщения
         message_key = f"{chat_id}_{message_id}_{user_text}"
@@ -224,7 +248,7 @@ class TelegramBot:
         
         # Защита от слишком частых сообщений
         current_time = time.time()
-        last_time = self._last_message_time.get(chat_id, 0)
+        last_time = self._last_message_time.get(chat_id, 0.0)
         
         if current_time - last_time < 0.5:
             logger.debug(f"⏱️ Слишком часто: {user.first_name}")
@@ -237,7 +261,7 @@ class TelegramBot:
         # Показываем "печатает..." с таймаутом
         try:
             await asyncio.wait_for(
-                context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing"),
+                context.bot.send_chat_action(chat_id=chat_id, action="typing"),
                 timeout=3.0
             )
         except Exception as e:
@@ -268,21 +292,25 @@ class TelegramBot:
             return
         
         # Обычный диалог
+        agent_any = cast(Any, self.agent)
         conversation = None
-        if hasattr(self.agent, 'components'):
-            conversation = self.agent.components.get('conversation')
+        if hasattr(agent_any, 'components'):
+            conversation = agent_any.components.get('conversation')
         
         if conversation:
             response = conversation.generate_response(user_text)
             await update.message.reply_text(response)
         else:
             await update.message.reply_text("Извини, я временно не могу ответить.")
-    
-    async def handle_voice(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    async def handle_voice(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Обработка голосовых сообщений в Telegram"""
-        user = update.effective_user
-        chat_id = update.effective_chat.id
-        message_id = update.message.message_id
+        if not update.message or not update.message.voice or not update.effective_user or not update.effective_chat:
+            return
+            
+        user: User = update.effective_user
+        chat_id: int = update.effective_chat.id
+        message_id: int = update.message.message_id
         
         logger.info(f"🎤 [Telegram {user.first_name}] Получено голосовое сообщение")
         
@@ -293,8 +321,10 @@ class TelegramBot:
             return
         
         self._processed_messages.add(message_key)
-        
         await update.message.reply_text("🎤 Обрабатываю голосовое сообщение...")
+        
+        voice_path: Optional[Path] = None
+        wav_path: Optional[Path] = None
         
         try:
             # Скачиваем голосовое
@@ -303,38 +333,32 @@ class TelegramBot:
             await voice_file.download_to_drive(voice_path)
             
             # Конвертируем в wav для Whisper
-            import subprocess
             wav_path = voice_path.with_suffix('.wav')
             subprocess.run([
-                'ffmpeg', '-i', str(voice_path), 
+                'ffmpeg', '-y', '-i', str(voice_path), 
                 '-ar', '16000', '-ac', '1', str(wav_path)
             ], capture_output=True)
             
-            # Распознаем через audio_engine
-            if hasattr(self.agent, 'components') and 'audio' in self.agent.components:
-                audio_engine = self.agent.components['audio']
-                
+            agent_any = cast(Any, self.agent)
+            if hasattr(agent_any, 'components') and 'audio' in agent_any.components:
                 # Загружаем и распознаем через Whisper
-                import whisper
                 model = whisper.load_model("base")
                 result = model.transcribe(str(wav_path), language="ru")
-                text = result["text"].strip()
+                text = cast(str, result.get("text", "")).strip()
                 
                 if text:
                     await update.message.reply_text(f"📝 Распознано: {text}")
                     
                     # Отправляем в диалог
-                    conversation = self.agent.components.get('conversation')
+                    conversation = agent_any.components.get('conversation')
                     if conversation:
-                        # Показываем "печатает..."
                         await context.bot.send_chat_action(chat_id=chat_id, action="typing")
-                        
                         response = conversation.generate_response(text)
                         await update.message.reply_text(response)
                         
                         # Если есть голос, произносим ответ
-                        if 'voice' in self.agent.components:
-                            self.agent.components['voice'].speak(response)
+                        if 'voice' in agent_any.components:
+                            agent_any.components['voice'].speak(response)
                     else:
                         await update.message.reply_text("🤖 Модуль диалога недоступен")
                 else:
@@ -347,34 +371,34 @@ class TelegramBot:
             await update.message.reply_text("❌ Ошибка при обработке голосового сообщения")
         finally:
             # Очищаем временные файлы
-            for path in [voice_path, wav_path]:
-                if path and path.exists():
+            for p in [voice_path, wav_path]:
+                if p and p.exists():
                     try:
-                        path.unlink()
-                    except:
+                        p.unlink()
+                    except Exception:
                         pass
     
-    async def _handle_screenshot(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Обработчик скриншота"""
-        await update.message.reply_text("📸 Делаю скриншот...")
+    async def _handle_screenshot(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Обработчик скриншота: 5 сек задержки и выбор экрана по мышке"""
+        if not update.message:
+            return
+            
+        agent_any = cast(Any, self.agent)
+        vision = agent_any.components.get('vision') if hasattr(agent_any, 'components') else None
         
-        status = self._get_component_status()
-        
-        if status['tool_executor']:
-            try:
-                result = await self.agent.components['tool_executor'].execute({
-                    'type': 'take_screenshot',
-                    'monitor': 1
-                })
-                
-                if result['success']:
-                    screenshot_path = result['data']['path']
-                    with open(screenshot_path, 'rb') as photo:
-                        await update.message.reply_photo(photo, caption="📸 Скриншот")
-                else:
-                    await update.message.reply_text(f"❌ Не удалось сделать скриншот: {result.get('error', 'Неизвестная ошибка')}")
-            except Exception as e:
-                logger.error(f"❌ Ошибка при создании скриншота: {e}")
-                await update.message.reply_text("❌ Ошибка при создании скриншота")
+        if vision:
+            await update.message.reply_text("⏳ У тебя есть 5 секунд, чтобы навести мышь на нужный монитор...")
+            # Вызов асинхронного метода из VisionEngine
+            img = await cast(Any, vision).capture_screen(delay=5)
+            
+            if img:
+                import io
+                bio = io.BytesIO()
+                bio.name = 'screenshot.png'
+                img.save(bio, 'PNG')
+                bio.seek(0)
+                await update.message.reply_photo(photo=bio, caption="📸 Скриншот экрана, выбранного мышкой")
+            else:
+                await update.message.reply_text("❌ Не удалось сделать скриншот.")
         else:
-            await update.message.reply_text("❌ Инструмент скриншотов не доступен")
+            await update.message.reply_text("❌ Модуль зрения (Vision) не доступен.")

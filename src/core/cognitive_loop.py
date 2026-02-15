@@ -3,17 +3,21 @@
 """Основной когнитивный цикл Елены"""
 
 import asyncio
+from typing import Any, Dict, Optional, TYPE_CHECKING
 from loguru import logger
 
+# Используем TYPE_CHECKING, чтобы избежать циклического импорта ElenaAgent в рантайме
+if TYPE_CHECKING:
+    from src.core.bootstrap import ElenaAgent
 
 class CognitiveLoop:
     """Когнитивный цикл: восприятие → планирование → действие → обучение"""
     
-    def __init__(self, agent):
+    def __init__(self, agent: "ElenaAgent") -> None:
         self.agent = agent
         self.running = False
     
-    async def run(self):
+    async def run(self) -> None:
         """Запуск основного цикла"""
         self.running = True
         logger.info("🔄 Когнитивный цикл запущен")
@@ -24,12 +28,13 @@ class CognitiveLoop:
                 perception = await self._perceive()
                 
                 # 2. Планирование - используем components!
-                planner = self.agent.components.get('planner')
-                if planner:
+                # Аннотируем как Any, чтобы mypy не ругался на отсутствие метода create_plan
+                planner: Any = self.agent.components.get('planner')
+                if planner and hasattr(planner, 'create_plan'):
                     plan = planner.create_plan(perception)
                 else:
                     plan = {"actions": []}
-                    logger.warning("⚠️ Планировщик не доступен")
+                    logger.warning("⚠️ Планировщик не доступен или не имеет метода create_plan")
                 
                 # 3. Исполнение
                 result = await self._execute(plan)
@@ -47,12 +52,12 @@ class CognitiveLoop:
                 logger.error(f"❌ Ошибка в cognitive loop: {e}")
                 await asyncio.sleep(1)
     
-    async def _perceive(self):
+    async def _perceive(self) -> Dict[str, Any]:
         """Восприятие мира"""
-        perception = {"text": "", "image": None}
+        perception: Dict[str, Any] = {"text": "", "image": None}
         
         # Получаем текст из аудио, если компонент доступен
-        audio_comp = self.agent.components.get('audio')
+        audio_comp: Any = self.agent.components.get('audio')
         if audio_comp:
             try:
                 # Здесь должна быть реальная запись с микрофона
@@ -63,7 +68,7 @@ class CognitiveLoop:
                 logger.error(f"❌ Ошибка аудио: {e}")
         
         # Получаем изображение, если компонент доступен
-        vision_comp = self.agent.components.get('vision')
+        vision_comp: Any = self.agent.components.get('vision')
         if vision_comp:
             try:
                 # Заглушка для зрения
@@ -73,19 +78,21 @@ class CognitiveLoop:
         
         return perception
     
-    async def _execute(self, plan):
+    async def _execute(self, plan: Dict[str, Any]) -> Dict[str, Any]:
         """Выполнение плана"""
-        result = {"success": False, "data": None, "response": ""}
+        result: Dict[str, Any] = {"success": False, "data": None, "response": ""}
         
         # Получаем инструменты для выполнения
-        conversation = self.agent.components.get('conversation')
+        conversation: Any = self.agent.components.get('conversation')
         
         if conversation and plan and plan.get('actions'):
             try:
                 # Берём первое действие из плана
-                action = plan['actions'][0] if plan['actions'] else None
+                actions = plan.get('actions', [])
+                action = actions[0] if actions else None
                 
                 if action and action.get('type') == 'converse':
+                    # Генерируем ответ (Ollama/Qwen)
                     response = conversation.generate_response(action.get('text', ''))
                     result = {
                         "success": True, 
@@ -94,8 +101,8 @@ class CognitiveLoop:
                     }
                     
                     # Если есть голос, произносим ответ
-                    voice = self.agent.components.get('voice')
-                    if voice:
+                    voice: Any = self.agent.components.get('voice')
+                    if voice and hasattr(voice, 'speak'):
                         voice.speak(response)
                         
             except Exception as e:
@@ -104,32 +111,34 @@ class CognitiveLoop:
         
         return result
     
-    def _learn(self, perception, plan, result):
+    def _learn(self, perception: Dict[str, Any], plan: Dict[str, Any], result: Dict[str, Any]) -> None:
         """Обучение на опыте"""
         # Получаем компонент самообучения
-        self_improvement = self.agent.components.get('self_improvement')
-        memory = self.agent.components.get('memory')
+        self_improvement: Any = self.agent.components.get('self_improvement')
+        memory: Any = self.agent.components.get('memory')
         
         if self_improvement and memory and result.get('success'):
             try:
                 # Сохраняем успешный диалог в память
                 if result.get('response'):
-                    memory.store(perception, plan, result)
-                    logger.debug("📚 Опыт сохранён в память")
+                    # Проверяем наличие метода store, чтобы не упасть в рантайме
+                    if hasattr(memory, 'store'):
+                        memory.store(perception, plan, result)
+                        logger.debug("📚 Опыт сохранён в память")
             except Exception as e:
                 logger.error(f"❌ Ошибка обучения: {e}")
     
-    def _cleanup(self):
+    def _cleanup(self) -> None:
         """Очистка временных файлов"""
-        cleanup = self.agent.components.get('cleanup')
+        cleanup: Any = self.agent.components.get('cleanup')
         if cleanup:
             try:
-                # Периодическая очистка
+                # Периодическая очистка (логика будет добавлена позже)
                 pass
             except Exception as e:
                 logger.error(f"❌ Ошибка очистки: {e}")
     
-    def stop(self):
+    def stop(self) -> None:
         """Остановка цикла"""
         self.running = False
         logger.info("⏹️ Когнитивный цикл остановлен")
