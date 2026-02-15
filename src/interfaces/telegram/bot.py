@@ -10,6 +10,10 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 from loguru import logger
 import os
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.core.bootstrap import ElenaAgent
 
 
 class TelegramBot:
@@ -18,7 +22,7 @@ class TelegramBot:
     Работает в фоновом режиме без конфликтов с терминалом
     """
     
-    def __init__(self, token: str, agent: ElenaAgent) -> None:
+    def __init__(self, token: str, agent: 'ElenaAgent'):
         """
         Инициализация Telegram бота
         
