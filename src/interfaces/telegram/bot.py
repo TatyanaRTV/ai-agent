@@ -18,7 +18,7 @@ class TelegramBot:
     Работает в фоновом режиме без конфликтов с терминалом
     """
     
-    def __init__(self, token: str, agent):
+    def __init__(self, token: str, agent: ElenaAgent) -> None:
         """
         Инициализация Telegram бота
         

@@ -20,7 +20,7 @@ class VoiceEngine:
     Автоматически определяет доступные голоса и настройки
     """
     
-    def __init__(self, config=None):
+    def __init__(self, config: dict) -> None:
         """
         Инициализация голосового движка
         
@@ -213,7 +213,7 @@ class VoiceEngine:
             except:
                 pass
     
-    def speak(self, text):
+    def speak(self, text: str) -> bool:
         """
         Асинхронное воспроизведение речи
         

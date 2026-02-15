@@ -50,7 +50,7 @@ class VectorMemory:
         logger.info(f"🧠 VectorMemory инициализирована: {self.persist_dir}")
         logger.info(f"   📊 Всего записей: {self.count()}")
     
-    def add(self, text: str, metadata: dict = None):
+    def add(self, text: str, metadata: dict | None = None) -> str | None:
         """
         Добавление текста в векторную память
         

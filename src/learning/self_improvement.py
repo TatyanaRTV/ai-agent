@@ -20,7 +20,7 @@ class SelfImprovement:
         }
         logger.info("📚 SelfImprovement инициализирован")
     
-    def learn_from_feedback(self, query: str, response: str, rating: int):
+    def learn_from_feedback(self, query: str, response: str, rating: int) -> None:
         """
         Сохраняет успешные диалоги в память для улучшения
         
@@ -58,7 +58,7 @@ class SelfImprovement:
         except Exception as e:
             logger.error(f"❌ Ошибка в learn_from_feedback: {e}")
     
-    def self_critique(self, last_actions: list):
+    def self_critique(self, last_actions: list | None = None) -> None:
         """
         Анализирует недавние действия и предлагает улучшения
         

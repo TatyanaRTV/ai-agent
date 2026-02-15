@@ -177,7 +177,7 @@ class Authenticator:
         logger.info(f"👤 Создан пользователь: {username} (роль: {role})")
         return True
     
-    def authenticate(self, username: str, password: str, ip_address: str = None):
+    def authenticate(self, username: str, password: str, ip_address: str | None = None) -> tuple[bool, str | None, dict | None]:
         """
         Аутентификация пользователя
         

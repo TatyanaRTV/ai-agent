@@ -10,7 +10,7 @@ from loguru import logger
 logger.remove()
 
 
-def setup_logger(config):
+def setup_logger(config: dict) -> logger:
     """
     Настройка логгера с ротацией файлов и фильтрацией
     

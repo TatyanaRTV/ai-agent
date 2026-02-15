@@ -104,7 +104,7 @@ class ToolExecutor:
         except Exception as e:
             logger.warning(f"   ⚠️ FileManager не загружен: {e}")
     
-    async def execute(self, action):
+    async def execute(self, action: dict) -> dict:
         """
         Выполнение одного действия
         
@@ -358,7 +358,7 @@ class ToolExecutor:
         except Exception as e:
             return {'success': False, 'error': str(e)}
     
-    def get_history(self, limit=10):
+    def get_history(self, limit: int = 10) -> list:
         """Получение истории выполнения"""
         return self.execution_history[-limit:]
     
