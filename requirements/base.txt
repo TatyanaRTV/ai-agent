@@ -16,7 +16,7 @@ langchain-community==0.4.1
 # Vision
 opencv-python==4.13.0.92
 mss==10.1.0
-pillow==12.1.1
+pillow>=9.2.0,<12.0
 
 # Audio
 pydub==0.25.1
