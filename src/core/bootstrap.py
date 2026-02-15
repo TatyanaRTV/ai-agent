@@ -38,7 +38,7 @@ class ElenaAgent:
     def __init__(self, test_mode: bool = False):
         self.test_mode = test_mode
         self.running = False
-        self.components = {}
+        self.components: dict[str, object] = {}  # ← ДОБАВИТЬ ЭТО
         self.browser_thread = None
         self.telegram_bot = None
         
