@@ -4,19 +4,19 @@ pyyaml==6.0.1
 loguru==0.7.2
 
 # ML & LLM
-torch==2.5.1
-transformers==4.45.0
+torch==2.8.0
+transformers==4.53.0
 accelerate==0.31.0
 huggingface_hub==0.25.0  # ПРОМЕЖУТОЧНАЯ, РАБОЧАЯ ВЕРСИЯ
 sentence-transformers==3.0.1
 chromadb==0.4.24
 langchain==0.2.5
-langchain-community==0.2.5
+langchain-community==0.3.27
 
 # Vision
 opencv-python==4.9.0.80
 mss==9.0.1
-pillow==10.3.0
+pillow==12.1.1
 
 # Audio
 pydub==0.25.1
