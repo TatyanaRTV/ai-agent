@@ -10,6 +10,7 @@ load_dotenv()
 # Тип для рекурсивных данных YAML (словарь, список, строка, число или None)
 YamlValue = Union[Dict[str, Any], List[Any], str, int, float, None]
 
+
 def load_config(config_path: str = "configs/main.yaml") -> Dict[str, Any]:
     """
     Загружает YAML-конфиг и рекурсивно подставляет переменные окружения.
@@ -30,24 +31,25 @@ def load_config(config_path: str = "configs/main.yaml") -> Dict[str, Any]:
     result: Dict[str, Any] = _substitute_env(config)
     return result
 
+
 def _substitute_env(obj: Any) -> Any:
     """Рекурсивно ищет строки вида ${VAR} и заменяет их на значения из окружения."""
     if isinstance(obj, dict):
         return {k: _substitute_env(v) for k, v in obj.items()}
-    
+
     elif isinstance(obj, list):
         return [_substitute_env(v) for v in obj]
-    
+
     elif isinstance(obj, str) and obj.startswith("${") and obj.endswith("}"):
         # Извлекаем содержимое между ${ и }
         content = obj[2:-1].strip()
-        
+
         # Проверяем наличие значения по умолчанию (синтаксис ${VAR:default})
         if ":" in content:
             env_var, default_value = content.split(":", 1)
             return os.getenv(env_var, default_value)
-        
+
         # Если двоеточия нет, возвращаем значение или саму строку ${VAR}, если переменной нет
         return os.getenv(content, obj)
-    
+
     return obj
