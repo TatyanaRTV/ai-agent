@@ -86,6 +86,11 @@ class VisionEngine:
 
             self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 
+            if self.tokenizer.pad_token_id is None:
+                self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
+            if hasattr(self.model, "config") and not hasattr(self.model.config, "pad_token_id"):
+                self.model.config.pad_token_id = self.tokenizer.pad_token_id
+
             logger.success("✅ nanoLLaVA загружен успешно")
 
         except Exception as e:

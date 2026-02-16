@@ -20,7 +20,7 @@
             align-items: center;
             color: #333;
         }
-        
+
         .container {
             width: 90%;
             max-width: 1200px;
@@ -173,7 +173,7 @@
         .message.assistant {
             align-items: flex-start;
         }
-        
+
         .message-content {
             max-width: 70%;
             padding: 12px 16px;
@@ -242,39 +242,25 @@
             transform: scale(1.1);
         }
         
-        .typing-indicator {
+        .command-buttons {
             display: flex;
-            gap: 5px;
-            padding: 12px 16px;
-            background: white;
-            border-radius: 18px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            max-width: 70%;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
         }
         
-        .typing-indicator span {
-            width: 8px;
-            height: 8px;
-            background: #999;
-            border-radius: 50%;
-            animation: typing 1.4s infinite;
+        .command-btn {
+            padding: 8px 15px;
+            background: #e9ecef;
+            border: none;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
         }
         
-        .typing-indicator span:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-        
-        .typing-indicator span:nth-child(3) {
-            animation-delay: 0.4s;
-        }
-        
-        @keyframes typing {
-            0%, 60%, 100% {
-                transform: translateY(0);
-            }
-            30% {
-                transform: translateY(-10px);
-            }
+        .command-btn:hover {
+            background: #dee2e6;
         }
     </style>
 </head>
@@ -291,7 +277,7 @@
                 <h3>📊 Системная информация</h3>
                 <div class="info-item">
                     <span class="info-label">Версия:</span>
-                    <span class="info-value" id="version">1.0.0</span>
+                    <span class="info-value">0.1.0</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">Время работы:</span>
@@ -312,6 +298,13 @@
                 <ul class="component-list" id="components">
                     <li>Загрузка...</li>
                 </ul>
+            </div>
+            
+            <div class="command-buttons">
+                <button class="command-btn" onclick="sendCommand('status')">📊 Статус</button>
+                <button class="command-btn" onclick="sendCommand('help')">❓ Помощь</button>
+                <button class="command-btn" onclick="sendCommand('clear')">🧹 Очистить</button>
+                <button class="command-btn" onclick="takeScreenshot()">📸 Скриншот</button>
             </div>
         </div>
         
@@ -338,7 +331,7 @@
         let messageCount = 0;
         let reconnectAttempts = 0;
         const maxReconnectAttempts = 5;
-        
+
         function connectWebSocket() {
             ws = new WebSocket('ws://' + window.location.host + '/ws');
             
@@ -347,14 +340,12 @@
                 document.getElementById('connection-status').className = 'connection-status connected';
                 document.getElementById('connection-status').textContent = '● Подключено';
                 reconnectAttempts = 0;
-                addSystemMessage('🟢 Соединение установлено');
             };
             
             ws.onmessage = function(event) {
                 const data = JSON.parse(event.data);
-                
                 if (data.type === 'welcome') {
-                    addSystemMessage(data.message);
+                    addMessage(data.message, 'assistant');
                 } else if (data.type === 'response') {
                     addMessage(data.message, 'assistant');
                 }
@@ -364,25 +355,16 @@
                 console.log('WebSocket отключён');
                 document.getElementById('connection-status').className = 'connection-status disconnected';
                 document.getElementById('connection-status').textContent = '● Отключено';
-                
                 if (reconnectAttempts < maxReconnectAttempts) {
                     reconnectAttempts++;
                     setTimeout(connectWebSocket, 3000);
-                } else {
-                    addSystemMessage('❌ Не удалось подключиться к серверу');
                 }
-            };
-            
-            ws.onerror = function(error) {
-                console.error('WebSocket ошибка:', error);
             };
         }
         
-        // Отправка сообщения
         function sendMessage() {
             const input = document.getElementById('message-input');
             const message = input.value.trim();
-            
             if (message && ws && ws.readyState === WebSocket.OPEN) {
                 addMessage(message, 'user');
                 ws.send(JSON.stringify({message: message}));
@@ -392,52 +374,45 @@
             }
         }
         
-        // Добавление сообщения в чат
         function addMessage(text, sender) {
             const messagesDiv = document.getElementById('messages');
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message ' + sender;
-            
-            const time = new Date().toLocaleTimeString('ru-RU', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-            
-            messageDiv.innerHTML = `
-                <div class="message-content">${escapeHtml(text)}</div>
-                <div class="message-time">${time}</div>
-            `;
-            
+            const time = new Date().toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
+            messageDiv.innerHTML = `<div class="message-content">${text}</div><div class="message-time">${time}</div>`;
             messagesDiv.appendChild(messageDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
         
-        function addSystemMessage(text) {
-            const messagesDiv = document.getElementById('messages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message system';
-            messageDiv.style.textAlign = 'center';
-            messageDiv.style.color = '#666';
-            messageDiv.style.fontSize = '12px';
-            messageDiv.style.margin = '10px';
-            messageDiv.textContent = text;
-            messagesDiv.appendChild(messageDiv);
+        function sendCommand(cmd) {
+            let message = '';
+            switch(cmd) {
+                case 'status': message = 'Покажи статус системы'; break;
+                case 'help': message = 'Что ты умеешь?'; break;
+                case 'clear': document.getElementById('messages').innerHTML = ''; return;
+                default: message = cmd;
+            }
+            document.getElementById('message-input').value = message;
+            sendMessage();
         }
         
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+        function takeScreenshot() {
+            fetch('/api/command', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({command: 'take_screenshot', params: {}})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) { addMessage('📸 Скриншот создан', 'assistant'); }
+            });
         }
         
-        // Обновление статуса
         function updateStatus() {
             fetch('/api/status')
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('uptime').textContent = data.uptime;
-                    document.getElementById('version').textContent = data.version;
-                    
                     const componentsList = document.getElementById('components');
                     componentsList.innerHTML = '';
                     data.components.forEach(comp => {
@@ -445,37 +420,13 @@
                         li.textContent = comp;
                         componentsList.appendChild(li);
                     });
-                    
-                    let memoryText = 'N/A';
-                    if (data.memory_usage) {
-                        if (data.memory_usage.short_term) {
-                            memoryText = data.memory_usage.short_term + ' элементов';
-                        }
+                    if (data.memory_usage && data.memory_usage.short_term) {
+                        document.getElementById('memory-usage').textContent = data.memory_usage.short_term + ' элементов';
                     }
-                    document.getElementById('memory-usage').textContent = memoryText;
-                    document.getElementById('request-count').textContent = data.request_count || 0;
-                })
-                .catch(error => {
-                    console.error('Ошибка получения статуса:', error);
                 });
         }
         
-        // Инициализация
-        window.onload = function() {
-            connectWebSocket();
-            updateStatus();
-            setInterval(updateStatus, 5000);
-            
-            setTimeout(() => {
-                addMessage('Здравствуйте! Я Елена, ваш персональный ассистент. Чем я могу помочь?', 'assistant');
-            }, 500);
-        };
-        
-        window.onbeforeunload = function() {
-            if (ws) {
-                ws.close();
-            }
-        };
+        window.onload = function() { connectWebSocket(); updateStatus(); setInterval(updateStatus, 5000); };
     </script>
 </body>
 </html>

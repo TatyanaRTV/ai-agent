@@ -18,7 +18,6 @@ __pycache__/
 # Игнорируем логи и временные данные (у тебя они в папке data)
 data/logs/
 data/temp/
-launch.log
 
 # Игнорируем секреты (токены Telegram и т.д.)
 .env
