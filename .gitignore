@@ -1,25 +1,24 @@
-# Временные файлы и мусор
-*.old
-__pycache__/
-.mypy_cache/
-
-# Виртуальное окружение
-venv/
-.venv/
+launch.log
+*.log
+КОРНЕВАЯ СТРУКТУРА ПАПОК
 configs/secrets.yaml
 
-# ЛОКАЛЬНЫЕ ДАННЫЕ (самое важное)
-# Мы не пушим саму базу векторов и ключи, только структуру кода
-data/vectors/
-data/security/*.bin
-data/security/*.json
-data/temp/
+# Игнорируем временные копии файлов (старые версии)
+*.old
+
+# Игнорируем виртуальное окружение
+venv/
+.venv/
+
+# Игнорируем кэш Python и Mypy
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+
+# Игнорируем логи и временные данные (у тебя они в папке data)
 data/logs/
+data/temp/
 launch.log
 
-# Настройки Obsidian (пушим заметки, но не конфиги интерфейса)
-Ai_Obsidian/.obsidian/
-
-# Секреты
+# Игнорируем секреты (токены Telegram и т.д.)
 .env
-secrets.yaml
