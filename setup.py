@@ -19,6 +19,7 @@ try:
 except FileNotFoundError:
     long_description = "Елена - персональный ИИ-агент с голосом, зрением и Telegram-интеграцией"
 
+
 # Читаем зависимости из requirements.txt
 def read_requirements():
     """Читает зависимости из requirements.txt"""
@@ -39,8 +40,9 @@ def read_requirements():
                         requirements.append(line)
         except FileNotFoundError:
             print("⚠️ Предупреждение: не найден файл с зависимостями")
-    
+
     return requirements
+
 
 # Определяем дополнительные зависимости для разных платформ
 extras = {
@@ -131,9 +133,18 @@ setup(
         "Natural Language :: Russian",
     ],
     keywords=[
-        "ai", "assistant", "telegram-bot", "voice-assistant",
-        "screen-capture", "ollama", "qwen", "nanollava",
-        "russian", "linux", "gpu", "cuda"
+        "ai",
+        "assistant",
+        "telegram-bot",
+        "voice-assistant",
+        "screen-capture",
+        "ollama",
+        "qwen",
+        "nanollava",
+        "russian",
+        "linux",
+        "gpu",
+        "cuda",
     ],
     license="MIT",
     platforms=["Linux"],
